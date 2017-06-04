@@ -9,14 +9,22 @@ def df_to_dict(df):
 
 def extract_intersections(edges_list):
     intersection_dict = {}
+    intersection_name = {}
 
     for item in edges_list:
 
         if item['from_cnn'] not in intersection_dict:
             intersection_dict[item['from_cnn']] = item['from_cnn_coords']
+            intersection_name[item['from_cnn']] = []
+
+        intersection_name[item['from_cnn']].append(item['streetname'])
+
 
         if item['to_cnn'] not in intersection_dict:
             intersection_dict[item['to_cnn']] = item['to_cnn_coords']
+            intersection_name[item['to_cnn']] = []
+
+        intersection_name[item['to_cnn']].append(item['streetname'])
 
     intersections = []
 
@@ -24,6 +32,7 @@ def extract_intersections(edges_list):
         tmp_dict = {}
         tmp_dict['cnn'] = key
         tmp_dict['coordinates'] = value
+        tmp_dict['name'] = list(set(intersection_name[key]))
         intersections.append(tmp_dict)
 
     return intersections
