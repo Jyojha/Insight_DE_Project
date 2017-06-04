@@ -1,6 +1,6 @@
 import pandas as pd
 from neo4j.v1 import GraphDatabase, basic_auth
-import settings
+from config import settings
 
 
 # function to convert each row item in dictionary

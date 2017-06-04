@@ -6,5 +6,7 @@ DB_URL = 'bolt://localhost'
 USER_NAME = ""
 USER_PASSWORD = ""
 
-if os.path.exists("./settings_local.py"):
-    from settings_local import *
+try:
+	from config.settings_local import *
+except ImportError:
+	pass
