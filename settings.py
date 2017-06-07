@@ -7,4 +7,4 @@ USER_NAME = ""
 USER_PASSWORD = ""
 
 if os.path.exists("./settings_local.py"):
-	from settings_local import *
+    from settings_local import *
