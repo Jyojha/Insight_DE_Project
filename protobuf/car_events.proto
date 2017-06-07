@@ -1,0 +1,14 @@
+syntax = "proto2";
+
+package car_events;
+
+message CarId {
+	required int32 id = 1;
+}
+
+message CarEvent {
+	required int32 id = 1;
+	required double lat = 2;
+	required double lon = 3;
+	required int32 timestamp = 4;
+}
