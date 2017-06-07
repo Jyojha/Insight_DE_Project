@@ -32,10 +32,15 @@ def massage_edges(edges):
     massaged = []
 
     for edge in edges:
+        centerline = edge['centerline']
+        longitudes = [x[0] for x in centerline]
+        latitudes  = [x[1] for x in centerline]
+
         cleaned = {'cnn': edge['cnn'],
                    'streetname': edge['streetname'],
                    'classcode': edge['classcode'],
-                   'centerline': edge['centerline'],
+                   'longitudes': longitudes,
+                   'latitudes': latitudes,
                    'length': edge['length']}
 
         t, f = edge["to_cnn"], edge["from_cnn"]
@@ -85,9 +90,12 @@ def main():
     r = db.run('''UNWIND {edges} as edge
                   MATCH (f:Intersection {cnn: edge.from_cnn}),
                         (t:Intersection {cnn: edge.to_cnn})
-                  CREATE (f)-[s:Segment {cnn: edge.cnn, street: edge.streetname,
+                  CREATE (f)-[s:Segment {cnn: edge.cnn,
+                                         street: edge.streetname,
                                          classcode: edge.classcode,
-                                         length: edge.length}]->(t)
+                                         length: edge.length,
+                                         longitudes: edge.longitudes,
+                                         latitudes: edge.latitudes}]->(t)
                ''', edges=massaged_edges)
 
     print r.summary()
