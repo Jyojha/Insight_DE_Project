@@ -16,8 +16,8 @@ def deg2rad(d):
     return pi * d / 180
 
 def haversin(x, y, R=EARTH_RADIUS):
-    lon1, lat1 = x
-    lon2, lat2 = y
+    lon1, lat1 = x[0], x[1]
+    lon2, lat2 = y[0], y[1]
 
     lon1, lat1, lon2, lat2 = map(deg2rad, (lon1, lat1, lon2, lat2))
 
@@ -28,3 +28,6 @@ def haversin(x, y, R=EARTH_RADIUS):
     c = 2 * asin(min(1,sqrt(a)))
 
     return R * c
+
+def haversin_polyline(points):
+    return sum(haversin(x, y) for x, y in zip(points, points[1:]))
