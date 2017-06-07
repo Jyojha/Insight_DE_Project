@@ -68,9 +68,11 @@ def main():
 
     # Define the entry point to the database
     driver = GraphDatabase.driver(settings.DB_URL,
-                                  auth=basic_auth(settings.USER_NAME, settings.USER_PASSWORD))
+                                  auth=basic_auth(settings.USER_NAME,
+                                                  settings.USER_PASSWORD))
     db = driver.session()
 
+    print "Deleting everything"
     db.run("MATCH (n) DETACH DELETE n")
 
     edges_list = df_to_dict(edges)
@@ -78,15 +80,18 @@ def main():
 
     massaged_edges = massage_edges(edges_list)
 
+    print "Creating intersections"
     r = db.run('''UNWIND {nodes} as node
                   CREATE (n:Intersection)
                   SET n = node
                ''', nodes=nodes)
-    print r.summary()
+    r.summary()
 
+    print "Creating intersections index"
     r = db.run('CREATE INDEX ON :Intersection(cnn)')
-    print r.summary()
+    r.summary()
 
+    print "Creating street segments"
     r = db.run('''UNWIND {edges} as edge
                   MATCH (f:Intersection {cnn: edge.from_cnn}),
                         (t:Intersection {cnn: edge.to_cnn})
@@ -98,9 +103,13 @@ def main():
                                          latitudes: edge.latitudes}]->(t)
                ''', edges=massaged_edges)
 
-    print r.summary()
+    r.summary()
 
+    print "Creating intersections index"
+    r = db.run('CREATE INDEX ON :Segment(cnn)')
+    r.summary()
 
+    print "Done"
 
 if __name__ == '__main__':
         main()
