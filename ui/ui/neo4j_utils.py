@@ -25,7 +25,7 @@ else:
 
 def find_path(from_cnn, to_cnn):
     with driver.session() as db:
-        r = db.run(SHORTEST_PATH_ALGO, from_cnn=from_cnn, to_cnn=to_cnn)
+        r = db.run(FIND_PATH_QUERY, from_cnn=from_cnn, to_cnn=to_cnn)
 
         row = r.single()
 

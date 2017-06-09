@@ -31,7 +31,7 @@ ALLOWED_HOSTS = []
 # Application definition
 
 INSTALLED_APPS = [
-    
+
     'django.contrib.auth',
     'django.contrib.contenttypes',
     'django.contrib.staticfiles',
@@ -122,4 +122,4 @@ if ROOT_DIR not in sys.path:
 
 from config.settings import *
 
-SHORTEST_PATH_ALGO='dijkstra'   # or aStar
+SHORTEST_PATH_ALGO='dijkstra'   # dijkstra or aStar
