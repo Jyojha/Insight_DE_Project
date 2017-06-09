@@ -31,7 +31,8 @@ def extract_intersections(edges_list):
     for key, value in intersection_dict.iteritems():
         tmp_dict = {}
         tmp_dict['cnn'] = key
-        tmp_dict['coordinates'] = value
+        tmp_dict['lon'] = value[0]
+        tmp_dict['lat'] = value[1]
         tmp_dict['name'] = list(set(intersection_name[key]))
         intersections.append(tmp_dict)
 
