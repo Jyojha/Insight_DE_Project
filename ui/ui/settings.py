@@ -121,3 +121,5 @@ if ROOT_DIR not in sys.path:
     sys.path.append(ROOT_DIR)
 
 from config.settings import *
+
+SHORTEST_PATH_ALGO='dijkstra'   # or aStar

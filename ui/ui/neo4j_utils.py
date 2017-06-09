@@ -5,15 +5,27 @@ driver = GraphDatabase.driver(settings.DB_URL,
                               auth=basic_auth(settings.USER_NAME,
                                               settings.USER_PASSWORD))
 
+if settings.SHORTEST_PATH_ALGO == 'dijkstra':
+    FIND_PATH_QUERY='''MATCH (n:Intersection {cnn: $from_cnn})
+                       WITH n
+                       MATCH (m:Intersection {cnn: $to_cnn})
+                       CALL apoc.algo.dijkstra(n, m, 'Segment>', 'length')
+                       YIELD path, weight
+                       RETURN path, weight'''
+elif settings.SHORTEST_PATH_ALGO == 'aStar':
+    FIND_PATH_QUERY='''MATCH (n:Intersection {cnn: $from_cnn})
+                       WITH n
+                       MATCH (m:Intersection {cnn: $to_cnn})
+                       CALL apoc.algo.aStar(n, m, 'Segment>', 'length', 'lat', 'lon')
+                       YIELD path, weight
+                       RETURN path, weight'''
+else:
+    algo = settings.SHORTEST_PATH_ALGO
+    raise AssertionError("Unknown shortest path algorithm %s" % algo)
+
 def find_path(from_cnn, to_cnn):
     with driver.session() as db:
-        r = db.run('''MATCH (n:Intersection {cnn: $from_cnn})
-                      WITH n
-                      MATCH (m:Intersection {cnn: $to_cnn})
-                      CALL apoc.algo.dijkstra(n, m, 'Segment>', 'length')
-                      YIELD path, weight
-                      RETURN path, weight''',
-                   from_cnn=from_cnn, to_cnn=to_cnn)
+        r = db.run(SHORTEST_PATH_ALGO, from_cnn=from_cnn, to_cnn=to_cnn)
 
         row = r.single()
 
