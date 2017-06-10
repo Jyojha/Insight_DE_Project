@@ -7,11 +7,11 @@ from config import settings
 def df_to_dict(df):
     return df.to_dict(orient='records')
 
-def extract_intersections(edges_list):
+def extract_intersections(segments_list):
     intersection_dict = {}
     intersection_name = {}
 
-    for item in edges_list:
+    for item in segments_list:
 
         if item['from_cnn'] not in intersection_dict:
             intersection_dict[item['from_cnn']] = item['from_cnn_coords']
@@ -38,30 +38,30 @@ def extract_intersections(edges_list):
 
     return intersections
 
-def massage_edges(edges):
+def massage_segments(segments):
     massaged = []
 
-    for edge in edges:
-        centerline = edge['centerline']
+    for segment in segments:
+        centerline = segment['centerline']
         longitudes = [x[0] for x in centerline]
         latitudes  = [x[1] for x in centerline]
 
-        cleaned = {'cnn': edge['cnn'],
-                   'streetname': edge['streetname'],
-                   'classcode': edge['classcode'],
+        cleaned = {'cnn': segment['cnn'],
+                   'streetname': segment['streetname'],
+                   'classcode': segment['classcode'],
                    'longitudes': longitudes,
                    'latitudes': latitudes,
-                   'length': edge['length']}
+                   'length': segment['length']}
 
-        t, f = edge["to_cnn"], edge["from_cnn"]
+        t, f = segment["to_cnn"], segment["from_cnn"]
 
-        if edge['oneway'] in ['B', 'T']:
+        if segment['oneway'] in ['B', 'T']:
             cleaned['from_cnn'] = t
             cleaned['to_cnn']   = f
 
             massaged.append(cleaned.copy())
 
-        if edge['oneway'] in ['B', 'F']:
+        if segment['oneway'] in ['B', 'F']:
             cleaned['from_cnn'] = f
             cleaned['to_cnn']   = t
 
@@ -73,7 +73,7 @@ def main():
     '''Populate the static road network data in to the database'''
 
     # Read the data
-    edges = pd.read_pickle(settings.EDGE_PATH)
+    segments = pd.read_pickle(settings.SEGMENT_PATH)
     node_neighbors = pd.read_json(settings.NODE_NEIGHBORS_PATH, orient='records')
 
     # Define the entry point to the database
@@ -85,10 +85,10 @@ def main():
     print "Deleting everything"
     db.run("MATCH (n) DETACH DELETE n")
 
-    edges_list = df_to_dict(edges)
-    nodes = extract_intersections(edges_list)
+    segments_list = df_to_dict(segments)
+    nodes = extract_intersections(segments_list)
 
-    massaged_edges = massage_edges(edges_list)
+    massaged_segments = massage_segments(segments_list)
 
     print "Creating intersections"
     r = db.run('''UNWIND {nodes} as node
@@ -102,16 +102,16 @@ def main():
     r.summary()
 
     print "Creating street segments"
-    r = db.run('''UNWIND {edges} as edge
-                  MATCH (f:Intersection {cnn: edge.from_cnn}),
-                        (t:Intersection {cnn: edge.to_cnn})
-                  CREATE (f)-[s:Segment {cnn: edge.cnn,
-                                         street: edge.streetname,
-                                         classcode: edge.classcode,
-                                         length: edge.length,
-                                         longitudes: edge.longitudes,
-                                         latitudes: edge.latitudes}]->(t)
-               ''', edges=massaged_edges)
+    r = db.run('''UNWIND {segments} as segment
+                  MATCH (f:Intersection {cnn: segment.from_cnn}),
+                        (t:Intersection {cnn: segment.to_cnn})
+                  CREATE (f)-[s:Segment {cnn: segment.cnn,
+                                         street: segment.streetname,
+                                         classcode: segment.classcode,
+                                         length: segment.length,
+                                         longitudes: segment.longitudes,
+                                         latitudes: segment.latitudes}]->(t)
+               ''', segments=massaged_segments)
 
     r.summary()
 
