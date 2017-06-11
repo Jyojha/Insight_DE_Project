@@ -7,4 +7,4 @@ all: car_events_pb2.py
 # of the dependencies, the specified commands are used to regenerate 
 # the goal
 car_events_pb2.py: protobuf/car_events.proto
-	protoc --python_out=./ $<
+	protoc --proto_path=protobuf/ --python_out=./ $<
