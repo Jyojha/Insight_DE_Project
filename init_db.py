@@ -13,8 +13,25 @@ def main():
                                                   settings.USER_PASSWORD))
     db = driver.session()
 
+    print "Dropping indexes"
+
+    try:
+        r = db.run("DROP INDEX ON :Intersection(cnn)")
+        r.summary()
+    except:
+        # index might not exist
+        pass
+
+    try:
+        r = db.run("DROP INDEX ON :Segment(cnn)")
+        r.summary()
+    except:
+        # index might not exist
+        pass
+
     print "Deleting everything"
-    db.run("MATCH (n) DETACH DELETE n")
+    r = db.run("MATCH (n) DELETE n")
+    r.summary()
 
     # Read the data
     segments = read_segments()
