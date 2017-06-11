@@ -42,15 +42,18 @@ class LocationEvent(object):
 
         return pb_event.SerializeToString()
 
-    def deserialize(self, data):
+    @classmethod
+    def deserialize(cls, data):
         pb_event = CarEvent()
         pb_event.ParseFromString(data)
 
-        self.car_id = pb_event.id
-        self.lat = pb_event.lat
-        self.lon = pb_event.lon
-        self.occupied = pb_event.occupied
-        self.timestamp = pb_event.timestamp
+        car_id = pb_event.id
+        lat = pb_event.lat
+        lon = pb_event.lon
+        occupied = pb_event.occupied
+        timestamp = pb_event.timestamp
+
+        return cls(car_id, lat, lon, occupied, timestamp)
 
 def read_file(path):
     base_name = basename(path)
