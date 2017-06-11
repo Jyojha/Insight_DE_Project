@@ -109,12 +109,17 @@ class StreetSegmentIndex(object):
 
         return nearest_segments_list[:num]
 
-    def import_from_file(self, path=settings.SEGMENT_PATH):
+    @classmethod
+    def from_file(cls, path=settings.SEGMENT_PATH):
         segments = read_segments(path)
+
+        index = cls()
 
         for segment in segments:
             cnn = segment['cnn']
             centerline = segment['centerline']
             name = segment['streetname']
 
-            self.add_street_segment(cnn, StreetSegment(cnn, name), centerline)
+            index.add_street_segment(cnn, StreetSegment(cnn, name), centerline)
+
+        return index
