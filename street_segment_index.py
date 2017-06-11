@@ -123,3 +123,28 @@ class StreetSegmentIndex(object):
             index.add_street_segment(cnn, StreetSegment(cnn, name), centerline)
 
         return index
+
+
+if __name__ == '__main__':
+    import sys
+
+    index = StreetSegmentIndex.from_file()
+
+    for line in sys.stdin.readlines():
+        line = line.strip()
+        fields = line.split(" ")
+
+        lat = float(fields[0])
+        lon = float(fields[1])
+
+        segments = index.nearest_segments(lon, lat, radius=10, num=4)
+
+        if not segments:
+            print "%s | <not found>" % line
+            continue
+
+        matches = []
+        for d, cnn, segment in segments:
+            matches.append("dist=%f, cnn=%d name='%s'" % (d, cnn, segment.obj.name))
+
+        print "%s | %s" % (line, ' | '.join(matches))
