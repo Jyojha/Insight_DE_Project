@@ -1,13 +1,35 @@
 import pandas as pd
+from copy import deepcopy
+
 from config import settings
+from distance import haversin
 
 # function to convert each row item in dictionary
 def df_to_dict(df):
     return df.to_dict(orient='records')
 
+def normalize_centerlines(segments):
+    def maybe_reverse(row):
+        centerline = row['centerline']
+        to_coords = row['to_cnn_coords']
+        from_coords = row['from_cnn_coords']
+
+        from_dist = haversin(centerline[0], from_coords)
+        to_dist = haversin(centerline[0], to_coords)
+
+        if from_dist > to_dist:
+            return centerline[::-1]
+        else:
+            return centerline
+
+    subset = segments[['centerline', 'from_cnn_coords', 'to_cnn_coords']]
+    segments['centerline'] = subset.apply(maybe_reverse, axis=1)
+
+    return segments
+
 def read_segments(path=settings.SEGMENT_PATH):
     segments = pd.read_pickle(path)
-    return df_to_dict(segments)
+    return df_to_dict(normalize_centerlines(segments))
 
 def extract_intersections(segments_list):
     intersection_dict = {}
@@ -48,22 +70,32 @@ def post_process_segments(segments):
         longitudes = [x[0] for x in centerline]
         latitudes  = [x[1] for x in centerline]
 
-        cleaned = {'cnn': segment['cnn'],
-                   'streetname': segment['streetname'],
-                   'classcode': segment['classcode'],
-                   'longitudes': longitudes,
-                   'latitudes': latitudes,
-                   'length': segment['length']}
+        template = {'cnn': segment['cnn'],
+                    'streetname': segment['streetname'],
+                    'classcode': segment['classcode'],
+                    'longitudes': longitudes,
+                    'latitudes': latitudes,
+                    'length': segment['length']}
 
         t, f = segment["to_cnn"], segment["from_cnn"]
 
         if segment['oneway'] in ['B', 'T']:
+            cleaned = deepcopy(template)
+
             cleaned['from_cnn'] = t
             cleaned['to_cnn']   = f
 
-            massaged.append(cleaned.copy())
+            # After normalization centerline always starts at "from
+            # intersection", so we need to reverse it back to preserve this
+            # property.
+            cleaned['longitudes'].reverse()
+            cleaned['latitudes'].reverse()
+
+            massaged.append(cleaned)
 
         if segment['oneway'] in ['B', 'F']:
+            cleaned = deepcopy(template)
+
             cleaned['from_cnn'] = f
             cleaned['to_cnn']   = t
 
