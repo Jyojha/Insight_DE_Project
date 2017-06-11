@@ -27,9 +27,16 @@ def normalize_centerlines(segments):
 
     return segments
 
+def add_centerline_lengths(segments):
+    def compute_dists(points):
+        return [haversin(x, y) for x, y in zip(points, points[1:])]
+
+    segments['centerline_lengths'] = segments['centerline'].map(compute_dists)
+    return segments
+
 def read_segments(path=settings.SEGMENT_PATH):
-    segments = pd.read_pickle(path)
-    return df_to_dict(normalize_centerlines(segments))
+    segments = normalize_centerlines(pd.read_pickle(path))
+    return df_to_dict(add_centerline_lengths(segments))
 
 def extract_intersections(segments_list):
     intersection_dict = {}
@@ -73,8 +80,9 @@ def post_process_segments(segments):
         template = {'cnn': segment['cnn'],
                     'streetname': segment['streetname'],
                     'classcode': segment['classcode'],
-                    'longitudes': longitudes,
-                    'latitudes': latitudes,
+                    'cl_longitudes': longitudes,
+                    'cl_latitudes': latitudes,
+                    'cl_lengths': segment['centerline_lengths'],
                     'length': segment['length']}
 
         t, f = segment["to_cnn"], segment["from_cnn"]
@@ -88,8 +96,9 @@ def post_process_segments(segments):
             # After normalization centerline always starts at "from
             # intersection", so we need to reverse it back to preserve this
             # property.
-            cleaned['longitudes'].reverse()
-            cleaned['latitudes'].reverse()
+            cleaned['cl_longitudes'].reverse()
+            cleaned['cl_latitudes'].reverse()
+            cleaned['cl_lengths'].reverse()
 
             massaged.append(cleaned)
 

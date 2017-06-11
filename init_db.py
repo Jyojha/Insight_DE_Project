@@ -58,8 +58,9 @@ def main():
                                          street: segment.streetname,
                                          classcode: segment.classcode,
                                          length: segment.length,
-                                         longitudes: segment.longitudes,
-                                         latitudes: segment.latitudes}]->(t)
+                                         cl_longitudes: segment.cl_longitudes,
+                                         cl_latitudes: segment.cl_latitudes,
+                                         cl_lengths: segment.cl_lengths}]->(t)
                ''', segments=processed_segments)
 
     r.summary()
