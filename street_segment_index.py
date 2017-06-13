@@ -38,6 +38,13 @@ class StreetSegmentIndex(object):
 
         self._rtree = Index(interleaved=False, properties=props)
 
+    # def __getstate__(self):
+    #     return self._rtree.dumps(self._rtree)
+
+    # def __setstate__(self, rtree_data):
+    #     self._rtree = Index()
+    #     self._rtree.loads(rtree_data)
+
     def _toXYZ(self, point):
         x, y, z = toXYZ(point)
 

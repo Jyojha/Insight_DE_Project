@@ -7,29 +7,50 @@ from street_segment_index import StreetSegment, StreetSegmentIndex
 from feed_events import LocationEvent
 import json
 
+def create_pipeline(ssc):
+
+    #Define kafka consumer
+    kafka_stream = KafkaUtils.createStream(ssc, 'localhost:2181', 'spark-streaming-01', {'events4':1},
+                                           valueDecoder=LocationEvent.deserialize)
+
+
+    with_street_names = kafka_stream.map(lambda (key, event): get_index().nearest_segment(event.lon, event.lat))
+
+
+    #with_street_names = kafka_stream.map(lambda (key, event): (event, index.nearest_segments(event.lon, event.lat)))
+    with_street_names = with_street_names.filter(lambda (event, streets): streets)
+    with_street_names.pprint()
+
+streets_index = None
+
+def get_index():
+    if streets_index is None:
+        streets_index = StreetSegmentIndex.from_file()
+
+    return streets_index
+
 def create_context():
     sc = SparkContext(appName="PythonSparkStreamingKafka_RM_02")
     sc.setLogLevel("WARN")
     ssc = StreamingContext(sc, 10)
 
-    #Define kafka consumer
-    kafka_stream = KafkaUtils.createStream(ssc, 'localhost:2181', 'spark-streaming-3', {'events3':2},
-                                           valueDecoder=LocationEvent.deserialize)
+
 
     #Processing
     #Extract geocoords
-    parsed = kafka_stream.map(lambda ev: (ev.lat, ev.lon))
+    #parsed = kafka_stream.map(lambda ev: (ev.lat, ev.lon))
 
     #Count number of geocoords in this batch
-    count_this_batch = kafka_stream.count().map(lambda x: ('Geocoords this batch: %s' %x))
+    #count_this_batch = kafka_stream.count().map(lambda x: ('Geocoords this batch: %s' %x))
 
     #Count by windowed time period
-    count_windowed_events = kafka_stream.countByWindow(10, 10).map(lambda x: "Number of events: %s" % x).pprint()
+    #count_windowed_events = kafka_stream.countByWindow(10, 10).map(lambda x: "Number of events: %s" % x).pprint()
 
     return ssc
 
 
-ssc = StreamingContext.getOrCreate('/tmp/checkpoint_v04', create_context)
+ssc = StreamingContext.getOrCreate('/tmp/checkpoint_v01', create_context)
+create_pipeline(ssc)
 ssc.start()
 ssc.awaitTermination()
-#ssc.stop()
+

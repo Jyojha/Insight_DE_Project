@@ -93,7 +93,7 @@ def read_directory(start_window_ts, stop_window_ts, directory):
 
     return all_events
 
-def create_kafka_producer(bootstrap_servers=['localhost:9092']):
+def create_kafka_producer(bootstrap_servers=['localhost:9093']):
     producer = KafkaProducer(bootstrap_servers=bootstrap_servers,
                              value_serializer=LocationEvent.serialize)
 
