@@ -20,9 +20,11 @@ function tmpfile() {
 html_file=$(tmpfile .html)
 coords_file=$(tmpfile)
 
+enable_path=$( (test "$1" == "--path" && echo "true") || echo "false" )
+
 awk 'BEGIN { printf("[") }; END {print("]")}; { printf("[%s, %s, \"%s, %s\"],", $1, $2, $1, $2) }' | sed 's/,]/]/' > "$coords_file"
 
-sed -e "/%COORDS%/ r $coords_file" -e "/%COORDS%/ d" > "$html_file" <<EOF
+sed -e "/%COORDS%/ r $coords_file" -e "/%COORDS%/ d" -e "s/%PATH%/$enable_path/" > "$html_file" <<EOF
 <head>
   <script src="https://unpkg.com/leaflet@1.0.3/dist/leaflet.js"
           integrity="sha512-A7vV8IFfih/D732iSSKi20u/ooOfj/AGehOKq0f4vLT1Zr2Y+RX7C+w8A1gaSasGtRUZpF/NZgzSAu4/Gc41Lg=="
@@ -41,6 +43,8 @@ var coords =
  %COORDS%
 ;
 
+var path = %PATH%;
+
 function doMap() {
     var map = L.map('mapid');
     L.tileLayer('https://api.tiles.mapbox.com/v4/{id}/{z}/{x}/{y}.png?access_token=pk.eyJ1IjoibWFwYm94IiwiYSI6ImNpejY4NXVycTA2emYycXBndHRqcmZ3N3gifQ.rJcFIG214AriISLbB6B5aw', {
@@ -52,11 +56,22 @@ function doMap() {
         accessToken: 'pk.eyJ1IjoibWFwYm94IiwiYSI6ImNpejY4NXVycTA2emYycXBndHRqcmZ3N3gifQ.rJcFIG214AriISLbB6B5aw'
     }).addTo(map);
 
+    var justCoords = [];
+
     for (i in coords) {
-        L.circleMarker([coords[i][0], coords[i][1]], {"radius": 5, "fillOpacity": 0.8}).bindPopup(String(i) + ": " + coords[i][2]).addTo(map);
+        var coord = [coords[i][0], coords[i][1]];
+        var text  = String(i) + ": " + coords[i][2];
+
+        justCoords.push(coord);
+
+        L.circleMarker(coord, {"radius": 5, "fillOpacity": 0.8}).bindPopup(text).addTo(map);
     }
 
-    map.setView([coords[0][0], coords[0][1]], 13);
+    if (path) {
+        L.polyline(justCoords, {"color": 'blue'}).addTo(map);
+    }
+
+    map.setView(justCoords[0], 13);
 }
   </script>
 <body>
