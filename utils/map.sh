@@ -22,7 +22,17 @@ coords_file=$(tmpfile)
 
 enable_path=$( (test "$1" == "--path" && echo "true") || echo "false" )
 
-awk 'BEGIN { printf("[") }; END {print("]")}; { printf("[%s, %s, \"%s, %s\"],", $1, $2, $1, $2) }' | sed 's/,]/]/' > "$coords_file"
+coords='['
+sep=
+
+while read line; do
+    set $line
+
+    coords="$coords$sep[$1, $2, '$(echo -n $line | tr -d '\r\n')']"
+    sep=", "
+done
+
+coords="$coords]"
 
 cat > "$html_file" <<EOF
 <head>
@@ -39,7 +49,7 @@ cat > "$html_file" <<EOF
 
   <script type="text/javascript">
 
-var coords = $(cat $coords_file);
+var coords = ${coords};
 
 var path = $enable_path;
 
