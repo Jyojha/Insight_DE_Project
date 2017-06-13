@@ -99,7 +99,7 @@ def create_kafka_producer(bootstrap_servers=['localhost:9092']):
 
     return producer
 
-def replay_events(all_events, topic_name='ingestiontest'):
+def replay_events(all_events, topic_name='events3'):
     producer = create_kafka_producer()
     topic = topic_name
 
