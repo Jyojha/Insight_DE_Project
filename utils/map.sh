@@ -1,6 +1,6 @@
 #!/bin/bash
 
-function open() {
+function sys_open() {
     if which open 2> /dev/null >&2; then
         open "$@"
     fi
@@ -79,4 +79,4 @@ function doMap() {
 <body>
 EOF
 
-open "$html_file"
+sys_open "$html_file"
