@@ -35,7 +35,7 @@ sed -e "/%COORDS%/ r $coords_file" -e "/%COORDS%/ d" -e "s/%PATH%/$enable_path/"
 </head>
 
 <body onload="doMap();">
-  <div style="height: 650px" id="mapid"></div>
+  <div style="width: 100%; height: 100%;" id="mapid"></div>
 
   <script type="text/javascript">
 
