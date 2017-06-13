@@ -24,7 +24,7 @@ enable_path=$( (test "$1" == "--path" && echo "true") || echo "false" )
 
 awk 'BEGIN { printf("[") }; END {print("]")}; { printf("[%s, %s, \"%s, %s\"],", $1, $2, $1, $2) }' | sed 's/,]/]/' > "$coords_file"
 
-sed -e "/%COORDS%/ r $coords_file" -e "/%COORDS%/ d" -e "s/%PATH%/$enable_path/" > "$html_file" <<EOF
+cat > "$html_file" <<EOF
 <head>
   <script src="https://unpkg.com/leaflet@1.0.3/dist/leaflet.js"
           integrity="sha512-A7vV8IFfih/D732iSSKi20u/ooOfj/AGehOKq0f4vLT1Zr2Y+RX7C+w8A1gaSasGtRUZpF/NZgzSAu4/Gc41Lg=="
@@ -39,11 +39,9 @@ sed -e "/%COORDS%/ r $coords_file" -e "/%COORDS%/ d" -e "s/%PATH%/$enable_path/"
 
   <script type="text/javascript">
 
-var coords =
- %COORDS%
-;
+var coords = $(cat $coords_file);
 
-var path = %PATH%;
+var path = $enable_path;
 
 function doMap() {
     var map = L.map('mapid');
