@@ -67,11 +67,13 @@ function doMap() {
         L.circleMarker(coord, {"radius": 5, "fillOpacity": 0.8}).bindPopup(text).addTo(map);
     }
 
-    if (path) {
-        L.polyline(justCoords, {"color": 'blue'}).addTo(map);
-    }
-
     map.setView(justCoords[0], 13);
+
+    if (path) {
+        var line = L.polyline(justCoords, {"color": 'blue'}).addTo(map);
+
+        map.fitBounds(line.getBounds());
+    }
 }
   </script>
 <body>
