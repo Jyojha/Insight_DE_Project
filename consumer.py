@@ -60,6 +60,7 @@ def create_context():
     return ssc
 
 
-ssc = StreamingContext.getOrCreate(settings.SPARK_CHECKPOINT, create_context)
-ssc.start()
-ssc.awaitTermination()
+if __name__ == '__main__':
+    ssc = create_context()
+    ssc.start()
+    ssc.awaitTermination()
