@@ -7,17 +7,16 @@ from street_segment_index import StreetSegment, StreetSegmentIndex
 from feed_events import LocationEvent
 import json
 
-def create_pipeline(ssc):
+def create_pipeline(sc, ssc):
+    ssi = sc.broadcast(PickleHack())
 
     #Define kafka consumer
     kafka_stream = KafkaUtils.createStream(ssc, 'localhost:2181', 'spark-streaming-01', {'events4':1},
                                            valueDecoder=LocationEvent.deserialize)
 
+    with_street_names = kafka_stream.map(lambda (key, event): (event, ssi.value.index.nearest_segments(event.lon, event.lat))
 
-    with_street_names = kafka_stream.map(lambda (key, event): get_index().nearest_segment(event.lon, event.lat))
 
-
-    #with_street_names = kafka_stream.map(lambda (key, event): (event, index.nearest_segments(event.lon, event.lat)))
     with_street_names = with_street_names.filter(lambda (event, streets): streets)
     with_street_names.pprint()
 
@@ -34,7 +33,7 @@ def create_context():
     sc.setLogLevel("WARN")
     ssc = StreamingContext(sc, 10)
 
-
+    create_pipeline(sc, ssc)
 
     #Processing
     #Extract geocoords
@@ -50,7 +49,5 @@ def create_context():
 
 
 ssc = StreamingContext.getOrCreate('/tmp/checkpoint_v01', create_context)
-create_pipeline(ssc)
 ssc.start()
 ssc.awaitTermination()
-

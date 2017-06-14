@@ -38,13 +38,6 @@ class StreetSegmentIndex(object):
 
         self._rtree = Index(interleaved=False, properties=props)
 
-    # def __getstate__(self):
-    #     return self._rtree.dumps(self._rtree)
-
-    # def __setstate__(self, rtree_data):
-    #     self._rtree = Index()
-    #     self._rtree.loads(rtree_data)
-
     def _toXYZ(self, point):
         x, y, z = toXYZ(point)
 
@@ -131,6 +124,27 @@ class StreetSegmentIndex(object):
 
         return index
 
+class PickleHack(object):
+    def __init__(self):
+        self._index = None
+
+    def __getstate__(self):
+        dict = self.__dict__.copy().copy()
+        dict['_index'] = None
+        return dict
+
+    def __setstate__(self, dict):
+        self.__dict__.update(dict)
+
+    def _init_index(self):
+        if self._index is None:
+            print "Initializing index"
+            self._index = StreetSegmentIndex.from_file()
+
+    @property
+    def index(self):
+        self._init_index()
+        return self._index
 
 if __name__ == '__main__':
     import sys
