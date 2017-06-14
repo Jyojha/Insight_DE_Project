@@ -108,9 +108,17 @@ def replay_events(all_events, topic_name=settings.KAFKA_TOPIC):
     producer = create_kafka_producer()
     topic = topic_name
 
+    results = []
     for event in all_events:
         event.timestamp = math.trunc(time.time())
-        producer.send(topic, event, event.get_key())
+        future = producer.send(topic, event, event.get_key())
+        results.append(future)
+
+    producer.flush()
+
+    for result in results:
+        if result.failed():
+            raise result.exception
 
 if __name__ == '__main__':
     print "Reading events"
@@ -118,3 +126,4 @@ if __name__ == '__main__':
     print "Number of events to replay: %d" % len(events)
     print "Replaying the events"
     replay_events(events)
+    print "Replayed all events successfully"
