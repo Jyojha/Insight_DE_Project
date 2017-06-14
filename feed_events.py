@@ -9,6 +9,7 @@ import math
 from glob import glob
 
 from car_events_pb2 import CarId, CarEvent
+from config import settings
 
 def datetime_to_timestamp(dt):
     return math.trunc(time.mktime(dt.timetuple()))
@@ -84,7 +85,8 @@ def filter_events(start_window_ts, stop_window_ts, events):
         if start_window_ts <= event.timestamp <= stop_window_ts:
             yield event
 
-# read all the cab data files from the directory and extract the events for the specified window
+# read all the cab data files from the directory and extract the events for
+# the specified window
 def read_directory(start_window_ts, stop_window_ts, directory):
     files = glob(join(directory, "*.txt"))
     all_events = []
@@ -96,13 +98,13 @@ def read_directory(start_window_ts, stop_window_ts, directory):
 
     return all_events
 
-def create_kafka_producer(bootstrap_servers=['localhost:9093']):
+def create_kafka_producer(bootstrap_servers=settings.KAFKA_URL):
     producer = KafkaProducer(bootstrap_servers=bootstrap_servers,
                              value_serializer=LocationEvent.serialize)
 
     return producer
 
-def replay_events(all_events, topic_name='events4'):
+def replay_events(all_events, topic_name=settings.KAFKA_TOPIC):
     producer = create_kafka_producer()
     topic = topic_name
 
