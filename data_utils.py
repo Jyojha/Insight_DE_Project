@@ -1,5 +1,6 @@
 import pandas as pd
 from copy import deepcopy
+from pkg_resources import resource_stream
 
 from config import settings
 from distance import haversin
@@ -35,7 +36,7 @@ def add_centerline_lengths(segments):
     return segments
 
 def read_segments(path=settings.SEGMENT_PATH):
-    segments = normalize_centerlines(pd.read_pickle(path))
+    segments = normalize_centerlines(pd.read_pickle(get_resource(path)))
     return df_to_dict(add_centerline_lengths(segments))
 
 def extract_intersections(segments_list):
@@ -111,3 +112,6 @@ def post_process_segments(segments):
             massaged.append(cleaned)
 
     return massaged
+
+def get_resource(path):
+    return resource_stream(__name__, path)
