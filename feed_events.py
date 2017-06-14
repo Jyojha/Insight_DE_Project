@@ -10,10 +10,13 @@ from glob import glob
 
 from car_events_pb2 import CarId, CarEvent
 
+def datetime_to_timestamp(dt):
+    return math.trunc(time.mktime(dt.timetuple()))
+
 START_WINDOW = datetime(2008, 6, 6, 8, 00, 00)
 STOP_WINDOW = START_WINDOW + timedelta(minutes=60)
-START_WINDOW_TS = math.trunc(time.mktime(START_WINDOW.timetuple()))
-STOP_WINDOW_TS = math.trunc(time.mktime(STOP_WINDOW.timetuple()))
+START_WINDOW_TS = datetime_to_timestamp(START_WINDOW)
+STOP_WINDOW_TS = datetime_to_timestamp(STOP_WINDOW)
 
 class LocationEvent(object):
     def __init__(self, car_id, lat, lon, occupied, timestamp):
@@ -99,11 +102,12 @@ def create_kafka_producer(bootstrap_servers=['localhost:9093']):
 
     return producer
 
-def replay_events(all_events, topic_name='events3'):
+def replay_events(all_events, topic_name='events4'):
     producer = create_kafka_producer()
     topic = topic_name
 
     for event in all_events:
+        event.timestamp = math.trunc(time.time())
         producer.send(topic, event, event.get_key())
 
 if __name__ == '__main__':
