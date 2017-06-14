@@ -30,7 +30,7 @@ def main():
         pass
 
     print "Deleting everything"
-    r = db.run("MATCH (n) DELETE n")
+    r = db.run("MATCH (n) DETACH DELETE n")
     r.summary()
 
     # Read the data
