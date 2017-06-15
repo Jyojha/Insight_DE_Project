@@ -1,3 +1,5 @@
+import cPickle
+
 from numpy import array, cross, dot
 from numpy.linalg import norm
 from scipy.spatial.distance import euclidean
@@ -31,6 +33,59 @@ class IndexItem(object):
                                     self.src_xyz, self.dst_xyz,
                                     self.obj))
 
+class SerializableIndex(Index):
+    def __init__(self, *args, **kwargs):
+        self._serialize_objects = True
+        super(SerializableIndex, self).__init__(*args, **kwargs)
+
+    def __getstate__(self):
+        state = super(SerializableIndex, self).__getstate__()
+        state['rtree_dump'] = self._dump_rtree()
+
+        return state
+
+    def __setstate__(self, state):
+        rtree_dump = state.pop('rtree_dump')
+        super(SerializableIndex, self).__setstate__(state)
+        self._undump_rtree(rtree_dump)
+
+    def dumps(self, obj):
+        if self._serialize_objects:
+            return cPickle.dumps(obj, protocol=cPickle.HIGHEST_PROTOCOL)
+        else:
+            return obj
+
+    def loads(self, data):
+        if self._serialize_objects:
+            return cPickle.loads(data)
+        else:
+            return data
+
+    def _disable_serialization(self, f, *args, **kwargs):
+        self._serialize_objects = False
+        r = f(*args, **kwargs)
+        self._serialize_objects = True
+
+        return r
+
+    def _dump_rtree(self):
+        return self._disable_serialization(self._do_dump_rtree)
+
+    def _do_dump_rtree(self):
+        result = []
+
+        bounds = self.get_bounds()
+        for item in self.intersection(bounds, objects=True):
+            result.append( (item.id, item.bbox, item.object) )
+
+        return result
+
+    def _undump_rtree(self, items):
+        return self._disable_serialization(self._do_undump_rtree, items)
+
+    def _do_undump_rtree(self, items):
+        self.handle = self._create_idx_from_stream(iter(items))
+
 class StreetSegmentIndex(object):
     def __init__(self, _segments=[]):
         props = Property()
@@ -39,9 +94,9 @@ class StreetSegmentIndex(object):
         kwargs = {'properties': props}
 
         if _segments:
-            self._rtree = Index(self._generate_segments(_segments), **kwargs)
+            self._rtree = SerializableIndex(self._generate_segments(_segments), **kwargs)
         else:
-            self._rtree = Index(**kwargs)
+            self._rtree = SerializableIndex(**kwargs)
 
     def _toXYZ(self, point):
         x, y, z = toXYZ(point)
