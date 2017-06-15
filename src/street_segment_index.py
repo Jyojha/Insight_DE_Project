@@ -7,7 +7,7 @@ from scipy.spatial.distance import euclidean
 from pysal.cg.sphere import toXYZ, RADIUS_EARTH_KM
 from rtree.index import Index, Property
 
-from data_utils import read_segments
+from data_utils import read_segments, get_resource
 from config import settings
 
 RADIUS_EARTH_M = RADIUS_EARTH_KM * 1000
@@ -188,8 +188,21 @@ class StreetSegmentIndex(object):
         return nearest_segments_list[:num]
 
     @classmethod
-    def from_file(cls, path=settings.SEGMENTS_PATH):
+    def from_segments(cls, path=settings.SEGMENTS_PATH):
         return cls(_segments=read_segments(path))
+
+    @classmethod
+    def read_pickle(cls, path=settings.STREET_INDEX_PICKLE):
+        index = cPickle.load(get_resource(path))
+
+        if not isinstance(index, cls):
+            raise TypeError('"%s" is not a pickled street index' % path)
+
+        return index
+
+    def write_pickle(self, path=settings.STREET_INDEX_PICKLE):
+        with open(path, 'w') as f:
+            cPickle.dump(self, f, protocol=cPickle.HIGHEST_PROTOCOL)
 
 class PickleHack(object):
     def __init__(self):
@@ -206,7 +219,7 @@ class PickleHack(object):
     def _init_index(self):
         if self._index is None:
             print "Initializing index"
-            self._index = StreetSegmentIndex.from_file()
+            self._index = StreetSegmentIndex.from_segments()
 
     @property
     def index(self):
@@ -216,7 +229,7 @@ class PickleHack(object):
 if __name__ == '__main__':
     import sys
 
-    index = StreetSegmentIndex.from_file()
+    index = StreetSegmentIndex.read_pickle()
 
     for line in sys.stdin.readlines():
         line = line.strip()

@@ -10,6 +10,8 @@ USER_PASSWORD = ""
 KAFKA_URL='localhost:9092'
 KAFKA_TOPIC='traffic-events'
 
+STREET_INDEX_PICKLE = 'data/street_segment_index.pickle'
+
 try:
     from config.settings_local import *
 except ImportError:
