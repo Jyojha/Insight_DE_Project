@@ -33,12 +33,9 @@ def create_pipeline(sc, ssc):
     ssi = sc.broadcast(PickleHack())
 
     #Define kafka consumer
-    kafka_stream = \
-                   KafkaUtils.createStream(ssc,
-                                           settings.ZOOKEEPER_URL,
-                                           settings.KAFKA_GROUP,
-                                           {settings.KAFKA_TOPIC: settings.KAFKA_TOPIC_THREADS},
-                                           valueDecoder=LocationEvent.deserialize)
+    kafka_stream = KafkaUtils.createDirectStream(ssc, [settings.KAFKA_TOPIC],
+                                                 {"bootstrap.servers": settings.KAFKA_URL},
+                                                 valueDecoder=LocationEvent.deserialize)
 
     with_street_names = kafka_stream.map(lambda (key, event): (event, ssi.value.index.nearest_segments(event.lon, event.lat)))
     with_street_names = with_street_names.filter(lambda (event, streets): streets)
