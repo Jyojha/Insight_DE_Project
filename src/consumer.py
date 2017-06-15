@@ -2,7 +2,7 @@ import os
 from pyspark import SparkContext
 from pyspark.streaming import StreamingContext
 from pyspark.streaming.kafka import KafkaUtils
-from street_segment_index import PickleHack
+from street_segment_index import StreetSegmentIndex
 from feed_events import LocationEvent
 from itertools import groupby
 import json
@@ -30,14 +30,14 @@ def pred(item):
     return False
 
 def create_pipeline(sc, ssc):
-    ssi = sc.broadcast(PickleHack())
+    ssi = sc.broadcast(StreetSegmentIndex.read_pickle())
 
     #Define kafka consumer
     kafka_stream = KafkaUtils.createDirectStream(ssc, [settings.KAFKA_TOPIC],
                                                  {"bootstrap.servers": settings.KAFKA_URL},
                                                  valueDecoder=LocationEvent.deserialize)
 
-    with_street_names = kafka_stream.map(lambda (key, event): (event, ssi.value.index.nearest_segments(event.lon, event.lat)))
+    with_street_names = kafka_stream.map(lambda (key, event): (event, ssi.value.nearest_segments(event.lon, event.lat)))
     with_street_names = with_street_names.filter(lambda (event, streets): streets)
     with_street_names = with_street_names.map(lambda (event, streets): (event, streets[0]))
 

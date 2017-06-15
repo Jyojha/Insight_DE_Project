@@ -218,28 +218,6 @@ class StreetSegmentIndex(object):
         with open(path, 'w') as f:
             cPickle.dump(self, f, protocol=cPickle.HIGHEST_PROTOCOL)
 
-class PickleHack(object):
-    def __init__(self):
-        self._index = None
-
-    def __getstate__(self):
-        dict = self.__dict__.copy().copy()
-        dict['_index'] = None
-        return dict
-
-    def __setstate__(self, dict):
-        self.__dict__.update(dict)
-
-    def _init_index(self):
-        if self._index is None:
-            print "Initializing index"
-            self._index = StreetSegmentIndex.from_segments()
-
-    @property
-    def index(self):
-        self._init_index()
-        return self._index
-
 if __name__ == '__main__':
     import sys
 
