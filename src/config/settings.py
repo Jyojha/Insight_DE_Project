@@ -1,3 +1,4 @@
+import logging
 from os import path
 
 SPARK_APP_NAME='traffic-processing'
@@ -11,6 +12,8 @@ KAFKA_URL='localhost:9092'
 KAFKA_TOPIC='traffic-events'
 
 STREET_INDEX_PICKLE = 'data/street_segment_index.pickle'
+
+LOGGING_LEVEL = logging.DEBUG
 
 try:
     from config.settings_local import *

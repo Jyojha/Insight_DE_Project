@@ -1,17 +1,10 @@
 from logging import StreamHandler, Formatter, getLogger, DEBUG
-from config.settings import SPARK_APP_NAME
+from config.settings import SPARK_APP_NAME, LOGGING_LEVEL
 
-_logger = getLogger(SPARK_APP_NAME)
-_configured = None
+_logger = None
 
-def get_logger():
-    return _logger
-
-def enable(level=DEBUG):
-    if _configured:
-        return _logger
-
-    _logger.setLevel(level)
+def configure(logger, level):
+    logger.setLevel(level)
 
     handler = StreamHandler()
     handler.setLevel(level)
@@ -19,6 +12,13 @@ def enable(level=DEBUG):
     formatter = Formatter("%(name)s - %(asctime)s - %(levelname)s - %(message)s")
     handler.setFormatter(formatter)
 
-    _logger.addHandler(handler)
+    logger.addHandler(handler)
+
+def get_logger():
+    global _logger
+
+    if _logger is None:
+        _logger = getLogger(SPARK_APP_NAME)
+        configure(_logger, LOGGING_LEVEL)
 
     return _logger
