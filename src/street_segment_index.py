@@ -7,8 +7,14 @@ from scipy.spatial.distance import euclidean
 from pysal.cg.sphere import toXYZ, RADIUS_EARTH_KM
 from rtree.index import Index, Property
 
+
+import log
+
 from data_utils import read_segments, get_resource
 from config import settings
+from utils import timeit
+
+logger = log.get_logger()
 
 RADIUS_EARTH_M = RADIUS_EARTH_KM * 1000
 
@@ -69,7 +75,10 @@ class SerializableIndex(Index):
         return r
 
     def _dump_rtree(self):
-        return self._disable_serialization(self._do_dump_rtree)
+        dt, dump = timeit(lambda: self._disable_serialization(self._do_dump_rtree))
+        logger.debug('Dumped r-tree in %fs', dt)
+
+        return dump
 
     def _do_dump_rtree(self):
         result = []
@@ -81,7 +90,10 @@ class SerializableIndex(Index):
         return result
 
     def _undump_rtree(self, items):
-        return self._disable_serialization(self._do_undump_rtree, items)
+        dt, r = timeit(lambda:  self._disable_serialization(self._do_undump_rtree, items))
+        logger.debug('Undumped r-tree in %fs', dt)
+
+        return r
 
     def _do_undump_rtree(self, items):
         self.handle = self._create_idx_from_stream(iter(items))
@@ -193,7 +205,9 @@ class StreetSegmentIndex(object):
 
     @classmethod
     def read_pickle(cls, path=settings.STREET_INDEX_PICKLE):
-        index = cPickle.load(get_resource(path))
+        dt, index = timeit(lambda: cPickle.load(get_resource(path)))
+
+        logger.debug("Read street index from resource in %fs", dt)
 
         if not isinstance(index, cls):
             raise TypeError('"%s" is not a pickled street index' % path)
