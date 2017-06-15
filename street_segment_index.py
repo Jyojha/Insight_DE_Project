@@ -32,11 +32,16 @@ class IndexItem(object):
                                     self.obj))
 
 class StreetSegmentIndex(object):
-    def __init__(self):
+    def __init__(self, _segments=[]):
         props = Property()
         props.dimension = 3
 
-        self._rtree = Index(interleaved=False, properties=props)
+        kwargs = {'interleaved': False, 'properties': props}
+
+        if _segments:
+            self._rtree = Index(self._generate_segments(_segments), **kwargs)
+        else:
+            self._rtree = Index(**kwargs)
 
     def _toXYZ(self, point):
         x, y, z = toXYZ(point)
@@ -84,13 +89,28 @@ class StreetSegmentIndex(object):
         # the segment line.
         return norm(cross(s1 - point, s2 - point)) / norm(s2 - s1)
 
-    def add_street_segment(self, id, obj, segment):
+    def _generate_segments(self, segments):
+        for segment in segments:
+            cnn = segment['cnn']
+            centerline = segment['centerline']
+            name = segment['streetname']
+
+            subsegments = self._generate_subsegments(cnn,
+                                                     StreetSegment(cnn, name),
+                                                     centerline)
+            for item in subsegments:
+                yield item
+
+    def _generate_subsegments(self, id, obj, segment):
         for node1, node2 in zip(segment, segment[1:]):
             xyz1 = self._toXYZ(node1)
             xyz2 = self._toXYZ(node2)
             bbox = self._bbox(xyz1, xyz2)
 
-            item = IndexItem(node1, node2, array(xyz1), array(xyz2), obj)
+            yield (id, bbox, IndexItem(node1, node2, array(xyz1), array(xyz2), obj))
+
+    def add_street_segment(self, id, obj, segment):
+        for id, bbox, item in self._generate_subsegments(id, obj, segment):
             self._rtree.insert(id, bbox, obj=item)
 
     def nearest_segments(self, lon, lat, radius=10, num=2):
@@ -111,18 +131,7 @@ class StreetSegmentIndex(object):
 
     @classmethod
     def from_file(cls, path=settings.SEGMENT_PATH):
-        segments = read_segments(path)
-
-        index = cls()
-
-        for segment in segments:
-            cnn = segment['cnn']
-            centerline = segment['centerline']
-            name = segment['streetname']
-
-            index.add_street_segment(cnn, StreetSegment(cnn, name), centerline)
-
-        return index
+        return cls(_segments=read_segments(path))
 
 class PickleHack(object):
     def __init__(self):
