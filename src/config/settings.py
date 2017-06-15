@@ -2,7 +2,7 @@ from os import path
 
 SPARK_APP_NAME='traffic-processing'
 
-SEGMENT_PATH = "data/street_segments.pickle"
+SEGMENTS_PATH = "data/street_segments.pickle"
 DB_URL = 'bolt://localhost'
 USER_NAME = ""
 USER_PASSWORD = ""

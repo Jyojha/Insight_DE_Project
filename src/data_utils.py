@@ -35,7 +35,7 @@ def add_centerline_lengths(segments):
     segments['centerline_lengths'] = segments['centerline'].map(compute_dists)
     return segments
 
-def read_segments(path=settings.SEGMENT_PATH):
+def read_segments(path=settings.SEGMENTS_PATH):
     segments = normalize_centerlines(pd.read_pickle(get_resource(path)))
     return df_to_dict(add_centerline_lengths(segments))
 

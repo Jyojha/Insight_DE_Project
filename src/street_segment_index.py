@@ -188,7 +188,7 @@ class StreetSegmentIndex(object):
         return nearest_segments_list[:num]
 
     @classmethod
-    def from_file(cls, path=settings.SEGMENT_PATH):
+    def from_file(cls, path=settings.SEGMENTS_PATH):
         return cls(_segments=read_segments(path))
 
 class PickleHack(object):
