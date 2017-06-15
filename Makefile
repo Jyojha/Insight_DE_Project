@@ -8,3 +8,11 @@ all: src/car_events_pb2.py
 # the goal
 src/car_events_pb2.py: src/protobuf/car_events.proto
 	protoc --proto_path=src/protobuf/ --python_out=src/ $<
+
+
+JOB_SOURCES = $(shell find src/config/ -type f -name *.py) \
+              $(shell find src/data/ -type f)              \
+              $(shell ls src/*.py)
+
+job.zip: $(JOB_SOURCES)
+	cd src/ && zip ../job.zip $(shell echo $(JOB_SOURCES) | sed -e 's,src/,,g')
