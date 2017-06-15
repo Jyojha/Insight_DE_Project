@@ -36,7 +36,7 @@ class StreetSegmentIndex(object):
         props = Property()
         props.dimension = 3
 
-        kwargs = {'interleaved': False, 'properties': props}
+        kwargs = {'properties': props}
 
         if _segments:
             self._rtree = Index(self._generate_segments(_segments), **kwargs)
@@ -60,14 +60,17 @@ class StreetSegmentIndex(object):
         maxy = max(y1, y2)
         maxz = max(z1, z2)
 
-        return (minx, maxx, miny, maxy, minz, maxz)
+        return (minx, miny, minz, maxx, maxy, maxz)
 
     def _bbox_for_point(self, xyz, radius):
         x, y, z = xyz
 
-        return (x - radius, x + radius,
-                y - radius, y + radius,
-                z - radius, z + radius)
+        return (x - radius,
+                y - radius,
+                z - radius,
+                x + radius,
+                y + radius,
+                z + radius)
 
     def _point_segment_distance(self, point, s1, s2):
         point = array(point)
