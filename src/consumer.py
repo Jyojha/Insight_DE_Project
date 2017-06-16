@@ -53,6 +53,19 @@ def create_pipeline(context, streaming_context):
     def has_cnn_groups((car_id, groups)):
         return bool(groups)
 
+    def drop_intermediary_events(groups):
+        def get_timestamp(event):
+            return event.timestamp
+
+        result = []
+        for segment, events in groups:
+            start_event = min(events, key=get_timestamp)
+            end_event   = max(events, key=get_timestamp)
+
+            result.append( (segment, (start_event, end_event)) )
+
+        return result
+
 
     kafka_stream = create_stream(streaming_context)
     kafka_stream.flatMap(lookup_segment, preservesPartitioning=True)            \
@@ -62,7 +75,8 @@ def create_pipeline(context, streaming_context):
                                       numPartitions=1)                          \
                 .mapValues(group_by_cnn)                                        \
                 .mapValues(drop_short_cnn_groups)                               \
-                .filter(has_cnn_groups).pprint()
+                .filter(has_cnn_groups)                                         \
+                .mapValues(drop_intermediary_events).pprint()
 
 def create_context():
     context = SparkContext(appName=settings.SPARK_APP_NAME)
