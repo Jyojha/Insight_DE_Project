@@ -1,6 +1,6 @@
 from django.http import JsonResponse, HttpResponseBadRequest
 from django.views.decorators.http import require_http_methods
-from ui import neo4j_utils 
+import neo4j_utils
 
 @require_http_methods("GET")
 def find_path(request):
@@ -15,7 +15,7 @@ def find_path(request):
         return HttpResponseBadRequest("bad request")
 
     path = neo4j_utils.find_path(from_cnn, to_cnn)
-    
+
     if path is None:
         return JsonResponse({"result": 'not_found'})
 

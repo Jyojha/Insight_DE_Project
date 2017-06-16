@@ -11,10 +11,17 @@ https://docs.djangoproject.com/en/1.11/ref/settings/
 """
 
 import os
+import sys
+
 
 # Build paths inside the project like this: os.path.join(BASE_DIR, ...)
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
+# Add project root to python search path to be able to import
+# config.settings from inside django project.
+ROOT_DIR = os.path.abspath(os.path.join(BASE_DIR, '..'))
+if ROOT_DIR not in sys.path:
+    sys.path.append(ROOT_DIR)
 
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/1.11/howto/deployment/checklist/
@@ -111,14 +118,6 @@ STATIC_URL = '/static/'
 STATICFILES_DIRS = [
         os.path.join(BASE_DIR, "ui/static/")
 ]
-
-import sys
-
-# Add project root to python search path to be able to import
-# config.settings from inside django project.
-ROOT_DIR = os.path.abspath(os.path.join(BASE_DIR, '..'))
-if ROOT_DIR not in sys.path:
-    sys.path.append(ROOT_DIR)
 
 from config.settings import *
 
