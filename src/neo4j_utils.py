@@ -54,6 +54,9 @@ def find_path(from_cnn, to_cnn):
             centerline = zip(rel['longitudes'], rel['latitudes'])
             length = rel['length']
 
+            avg_speed = rel.get('average_speed')
+            expected_time = rel.get('expected_time')
+
             from_node = to_node
 
             resp_item = {'from_name': from_name,
@@ -62,7 +65,9 @@ def find_path(from_cnn, to_cnn):
                          'to_cnn': to_cnn,
                          'street': street,
                          'centerline': centerline,
-                         'length': length}
+                         'length': length,
+                         'average_speed': avg_speed,
+                         'expected_time': expected_time}
 
             result.append(resp_item)
 
