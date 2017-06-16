@@ -9,56 +9,72 @@ import json
 
 from config import settings
 
-def group_by_car(events):
-    def key(item):
-        event, street = item
-        return event.car_id
+def create_stream(streaming_context):
+    topics = [settings.KAFKA_TOPIC]
+    config = {"bootstrap.servers": settings.KAFKA_URL}
 
-    grouped = []
-    for car_id, group in groupby(sorted(events, key=key), key):
-        grouped.append((car_id, list(group)))
+    return KafkaUtils.createDirectStream(streaming_context, topics, config,
+                                         valueDecoder=LocationEvent.deserialize)
 
-    return grouped
+def create_pipeline(context, streaming_context):
+    street_index = context.broadcast(StreetSegmentIndex.read_pickle())
+    def lookup_segment((key, event)):
+        index = street_index.value
 
-def pred(item):
-    _, events = item
+        return ((event, index_item)
+                for _, _, index_item in index.nearest_segments(lat=event.lat,
+                                                               lon=event.lon,
+                                                               num=1))
 
-    for car_id, car_events in events:
-        if len(car_events) > 1:
-            return True
+    def rekey_by_car_id((event, index_item)):
+        return event.car_id, [(event, index_item)]
 
-    return False
+    def collect_car_events(events1, events2):
+        return events1 + events2
 
-def create_pipeline(sc, ssc):
-    ssi = sc.broadcast(StreetSegmentIndex.read_pickle())
+    def uncollect_car_events(collected, expired):
+        expired_set = set(event.ts for event, _ in expired)
 
-    #Define kafka consumer
-    kafka_stream = KafkaUtils.createDirectStream(ssc, [settings.KAFKA_TOPIC],
-                                                 {"bootstrap.servers": settings.KAFKA_URL},
-                                                 valueDecoder=LocationEvent.deserialize)
+        return filter(lambda (event, _): event.ts not in expired_set, collected)
 
-    with_street_names = kafka_stream.map(lambda (key, event): (event, ssi.value.nearest_segments(event.lon, event.lat)))
-    with_street_names = with_street_names.filter(lambda (event, streets): streets)
-    with_street_names = with_street_names.map(lambda (event, streets): (event, streets[0]))
+    def group_by_cnn(items):
+        def get_cnn((event, index_item)):
+            return index_item.obj.cnn
 
-    cnn_indexed = with_street_names.map(lambda (event, (radius, cnn, street)): (cnn, (event, street)))
-    grouped_by_cnn = cnn_indexed.groupByKey().mapValues(lambda events: events)
-    grouped_by_cnn_and_car = grouped_by_cnn.mapValues(group_by_car).filter(pred)
-    windowed = grouped_by_cnn_and_car.window(120, 30)
+        for cnn, group in groupby(sorted(items, key=get_cnn), get_cnn):
+            group_list = list(group)
+            _, index_item = group_list[0]
 
-    windowed.pprint()
+            yield index_item, [event for event, _ in group_list]
+
+    def drop_short_cnn_groups(groups):
+        return filter(lambda (_, events): len(events) > 1, groups)
+
+    def has_cnn_groups((car_id, groups)):
+        return bool(groups)
+
+
+    kafka_stream = create_stream(streaming_context)
+    kafka_stream.flatMap(lookup_segment, preservesPartitioning=True)            \
+                .map(rekey_by_car_id, preservesPartitioning=True)               \
+                .reduceByKeyAndWindow(collect_car_events, uncollect_car_events,
+                                      windowDuration=120, slideDuration=30,
+                                      numPartitions=1)                          \
+                .mapValues(group_by_cnn)                                        \
+                .mapValues(drop_short_cnn_groups)                               \
+                .filter(has_cnn_groups).pprint()
 
 def create_context():
-    sc = SparkContext(appName=settings.SPARK_APP_NAME)
-    sc.setLogLevel("WARN")
-    ssc = StreamingContext(sc, 10)
+    context = SparkContext(appName=settings.SPARK_APP_NAME)
+    context.setLogLevel("WARN")
 
-    create_pipeline(sc, ssc)
+    streaming_context = StreamingContext(context, 10)
+    create_pipeline(context, streaming_context)
 
-    return ssc
-
+    streaming_context.checkpoint("/tmp/checkpoint")
+    return streaming_context
 
 if __name__ == '__main__':
-    ssc = create_context()
-    ssc.start()
-    ssc.awaitTermination()
+    streaming_context = create_context()
+    streaming_context.start()
+    streaming_context.awaitTermination()
