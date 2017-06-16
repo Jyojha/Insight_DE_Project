@@ -1,4 +1,6 @@
 import os
+import operator
+
 from pyspark import SparkContext
 from pyspark.streaming import StreamingContext
 from pyspark.streaming.kafka import KafkaUtils
@@ -27,15 +29,22 @@ def create_pipeline(context, streaming_context):
                                                                num=1)]
 
     def rekey_by_car_id((event, subsegment)):
-        return event.car_id, [(event, subsegment)]
+        return event.car_id, (event, subsegment)
 
-    def combine_events(events1, events2):
-        return events1 + events2
+    def combine_events(partition):
+        def get_id(item):
+            return item[0]
 
-    def expire_old_events(events, expired):
-        expired_set = set(event.ts for event, _ in expired)
+        for car_id, group in groupby(sorted(partition, key=get_id), get_id):
+            yield car_id, [event for _, event in group]
 
-        return filter(lambda (event, _): event.ts not in expired_set, events)
+    def recombine_events(partition):
+        def get_id(item):
+            return item[0]
+
+        for car_id, group in groupby(sorted(partition, key=get_id), get_id):
+            yield car_id, reduce(operator.add,
+                                 (events for _, events in group))
 
     def group_by_cnn(items):
         def get_cnn((event, subsegment)):
@@ -67,9 +76,9 @@ def create_pipeline(context, streaming_context):
     kafka_stream = create_stream(streaming_context)
     kafka_stream.flatMap(lookup_segment, preservesPartitioning=True)            \
                 .map(rekey_by_car_id, preservesPartitioning=True)               \
-                .reduceByKeyAndWindow(combine_events, expire_old_events,
-                                      windowDuration=120, slideDuration=30,
-                                      numPartitions=1)                          \
+                .mapPartitions(combine_events, preservesPartitioning=True)      \
+                .window(windowDuration=120, slideDuration=30)                   \
+                .mapPartitions(recombine_events, preservesPartitioning=True)    \
                 .mapValues(group_by_cnn)                                        \
                 .mapValues(drop_short_cnn_groups)                               \
                 .filter(has_cnn_groups)                                         \
