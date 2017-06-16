@@ -39,7 +39,7 @@ def create_pipeline(context, streaming_context):
 
     def group_by_cnn(items):
         def get_cnn((event, subsegment)):
-            return subsegment.obj.cnn
+            return subsegment.cnn
 
         for cnn, group in groupby(sorted(items, key=get_cnn), get_cnn):
             yield cnn, list(group)

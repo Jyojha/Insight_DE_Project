@@ -17,30 +17,25 @@ from distance import EARTH_RADIUS
 
 logger = log.get_logger()
 
-class StreetSegment(object):
-    def __init__(self, cnn, name):
-        self.cnn = cnn
-        self.name = name
+class StreetSubsegment(object):
+    def __init__(self, **kwargs):
+        self.cnn = kwargs['cnn']
+        self.name = kwargs['name']
+
+        self.src = kwargs['src']
+        self.dst = kwargs['dst']
+
+        self.subsegment_index = kwargs['subsegment_index']
+
+        self.src_xyz = kwargs['src_xyz']
+        self.dst_xyz = kwargs['dst_xyz']
 
     def __repr__(self):
-        return 'StreetSegment(%d, "%s")' % (self.cnn, self.name)
+        dict = self.__dict__.copy()
+        del dict['src_xyz']
+        del dict['dst_xyz']
 
-class IndexItem(object):
-    def __init__(self, src, dst, subsegment_index, src_xyz, dst_xyz, obj):
-        self.src = src
-        self.dst = dst
-
-        self.subsegment_index = subsegment_index
-
-        self.src_xyz = src_xyz
-        self.dst_xyz = dst_xyz
-        self.obj = obj
-
-    def __repr__(self):
-        return 'IndexItem%s' % str((self.src, self.dst,
-                                    self.subsegment_index,
-                                    self.src_xyz, self.dst_xyz,
-                                    self.obj))
+        return 'StreetSubsegment(**%s, ...)' % str(dict)
 
 class SerializableIndex(Index):
     def __init__(self, *args, **kwargs):
@@ -168,24 +163,27 @@ class StreetSegmentIndex(object):
             centerline = segment['centerline']
             name = segment['streetname']
 
-            subsegments = self._generate_subsegments(cnn,
-                                                     StreetSegment(cnn, name),
-                                                     centerline)
+            subsegments = self._generate_subsegments(cnn, name, centerline)
             for item in subsegments:
                 yield item
 
-    def _generate_subsegments(self, id, obj, segment):
-        for ix, (node1, node2) in enumerate(zip(segment, segment[1:])):
+    def _generate_subsegments(self, cnn, name, centerline):
+        for ix, (node1, node2) in enumerate(zip(centerline, centerline[1:])):
             xyz1 = self._toXYZ(node1)
             xyz2 = self._toXYZ(node2)
             bbox = self._bbox(xyz1, xyz2)
 
-            yield (id, bbox, IndexItem(node1, node2, ix,
-                                       array(xyz1), array(xyz2), obj))
+            yield (cnn, bbox, StreetSubsegment(cnn=cnn,
+                                               name=name,
+                                               src=node1,
+                                               dst=node2,
+                                               subsegment_index=ix,
+                                               src_xyz=array(xyz1),
+                                               dst_xyz=array(xyz2)))
 
-    def add_street_segment(self, id, obj, segment):
-        for id, bbox, item in self._generate_subsegments(id, obj, segment):
-            self._rtree.insert(id, bbox, obj=item)
+    def add_street_segment(self, cnn, name, centerline):
+        for id, bbox, subsegment in self._generate_subsegments(cnn, name, centerline):
+            self._rtree.insert(cnn, bbox, obj=subsegment)
 
     def nearest_segments(self, lon, lat, radius=10, num=2):
         xyz = self._toXYZ((lon, lat))
@@ -242,6 +240,6 @@ if __name__ == '__main__':
 
         matches = []
         for d, cnn, segment in segments:
-            matches.append("dist=%f, cnn=%d name='%s'" % (d, cnn, segment.obj.name))
+            matches.append("dist=%f, cnn=%d name='%s'" % (d, cnn, segment.name))
 
         print "%s | %s" % (line, ' | '.join(matches))
