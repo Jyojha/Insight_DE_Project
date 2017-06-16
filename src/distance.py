@@ -4,14 +4,6 @@ from math import asin, sin, cos, sqrt, radians
 
 from config import settings
 
-
-# Haight St and Central Ave
-lonlat1 = (-122.44364908616127, 37.77042637070029)
-
-# Haight St and Masonic Ave
-lonlat2 = (-122.4453449903129, 37.77021017487183)
-
-
 # in meters
 EARTH_RADIUS = 6367000
 
