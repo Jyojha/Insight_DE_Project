@@ -73,12 +73,23 @@ class StreetInfo(object):
             start_to_from = haversin(from_coords, start_coords)
             end_to_from   = haversin(from_coords, end_coords)
 
+            # if difference is under one meter, we really can't say what
+            # direction the car is moving in
+            if abs(start_to_from - end_to_from) < 1.0:
+                return self._try_deduce_direction()
+
             if start_to_from < end_to_from:
                 direction = 'F'
-            else:               # TODO
+            else:
                 direction = 'T'
 
         return self._check_computed_direction(direction)
+
+    def _try_deduce_direction(self):
+        if self.oneway in ['T', 'F']:
+            return self.oneway
+
+        return None
 
     def _check_computed_direction(self, direction):
         if self.oneway == 'B':
