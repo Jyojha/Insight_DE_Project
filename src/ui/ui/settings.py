@@ -120,5 +120,3 @@ STATICFILES_DIRS = [
 ]
 
 from config.settings import *
-
-SHORTEST_PATH_ALGO='dijkstra'   # dijkstra or aStar

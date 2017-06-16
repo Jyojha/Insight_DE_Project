@@ -12,6 +12,8 @@ import json
 from config import settings
 from distance import StreetInfoIndex
 
+from neo4j_utils import update_times
+
 def create_stream(streaming_context):
     topics = [settings.KAFKA_TOPIC]
     config = {"bootstrap.servers": settings.KAFKA_URL}
@@ -90,11 +92,14 @@ def create_pipeline(context, streaming_context):
 
         return ((cnn, direction), (distance, time_taken))
 
+    def drop_unknown_direction( ((cnn, direction), (distance, time_taken)) ):
+        return direction is not None
+
     def sum_distance_and_time( (d1, t1), (d2, t2) ):
         return (d1 + d2, t1 + t2)
 
     def compute_expected_time_and_speed( (street, (totalDistance, totalTime)) ):
-        cnn = street[0]
+        cnn, direction = street
 
         info = street_info_index.value.get_info(cnn)
         length = info.length
@@ -110,7 +115,7 @@ def create_pipeline(context, streaming_context):
 
         street_info = street_info_index.value.get_info(cnn)
 
-        return (street_info, expected_time, avg_speed)
+        return (street_info, direction, expected_time, avg_speed)
 
     kafka_stream = create_stream(streaming_context)
     kafka_stream.flatMap(lookup_segment, preservesPartitioning=True)            \
@@ -124,10 +129,15 @@ def create_pipeline(context, streaming_context):
                 .mapValues(drop_intermediary_events)                            \
                 .flatMap(drop_car_id, preservesPartitioning=True)               \
                 .map(find_distance_and_time, preservesPartitioning=True)        \
+                .filter(drop_unknown_direction)                                 \
                 .reduceByKey(sum_distance_and_time)                             \
                 .map(compute_expected_time_and_speed,
                      preservesPartitioning=True)                                \
-                .filter(lambda (street, time, speed): speed > 10).pprint()
+                .repartition(1).foreachRDD(lambda rdd: update_times(rdd.collect()))
+
+    # kafka_stream.filter(lambda (street, direction, time, speed): speed > 10) \
+    #             .map(lambda (street, direction, time, speed):
+    #                  (street.cnn, street.name, direction, time, speed)).pprint()
 
 def create_context():
     context = SparkContext(appName=settings.SPARK_APP_NAME)

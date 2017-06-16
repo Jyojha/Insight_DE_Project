@@ -15,6 +15,8 @@ STREET_INDEX_PICKLE = 'data/street_segment_index.pickle'
 
 LOGGING_LEVEL = logging.DEBUG
 
+SHORTEST_PATH_ALGO='dijkstra'   # dijkstra or aStar
+
 SETTINGS_MODULE=environ.get('TRAFFIC_SETTINGS_MODULE')
 if SETTINGS_MODULE is not None and SETTINGS_MODULE:
     exec("from config.settings_%s import *" % SETTINGS_MODULE)

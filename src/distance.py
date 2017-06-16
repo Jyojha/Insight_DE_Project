@@ -34,7 +34,9 @@ class StreetInfo(object):
         self.name               = props['streetname']
         self.length             = props['length']
         self.classcode          = props['classcode']
+        self.from_cnn           = props['from_cnn']
         self.from_coords        = props['from_cnn_coords']
+        self.to_cnn             = props['to_cnn']
         self.to_coords          = props['to_cnn_coords']
 
         self.subsegments = zip(self.centerline, self.centerline[1:])
