@@ -13,7 +13,7 @@ if settings.SHORTEST_PATH_ALGO == 'dijkstra':
     FIND_PATH_QUERY='''MATCH (n:Intersection {cnn: $from_cnn})
                        WITH n
                        MATCH (m:Intersection {cnn: $to_cnn})
-                       CALL apoc.algo.dijkstra(n, m, 'Segment>', 'length')
+                       CALL apoc.algo.dijkstraWithDefaultWeight(n, m, 'Segment>', 'expected_time', 1200)
                        YIELD path, weight
                        RETURN path, weight'''
 elif settings.SHORTEST_PATH_ALGO == 'aStar':
