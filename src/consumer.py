@@ -21,25 +21,25 @@ def create_pipeline(context, streaming_context):
     def lookup_segment((key, event)):
         index = street_index.value
 
-        return ((event, index_item)
-                for _, _, index_item in index.nearest_segments(lat=event.lat,
+        return [(event, subsegment)
+                for _, _, subsegment in index.nearest_segments(lat=event.lat,
                                                                lon=event.lon,
-                                                               num=1))
+                                                               num=1)]
 
-    def rekey_by_car_id((event, index_item)):
-        return event.car_id, [(event, index_item)]
+    def rekey_by_car_id((event, subsegment)):
+        return event.car_id, [(event, subsegment)]
 
-    def collect_car_events(events1, events2):
+    def combine_events(events1, events2):
         return events1 + events2
 
-    def uncollect_car_events(collected, expired):
+    def expire_old_events(events, expired):
         expired_set = set(event.ts for event, _ in expired)
 
-        return filter(lambda (event, _): event.ts not in expired_set, collected)
+        return filter(lambda (event, _): event.ts not in expired_set, events)
 
     def group_by_cnn(items):
-        def get_cnn((event, index_item)):
-            return index_item.obj.cnn
+        def get_cnn((event, subsegment)):
+            return subsegment.obj.cnn
 
         for cnn, group in groupby(sorted(items, key=get_cnn), get_cnn):
             yield cnn, list(group)
@@ -51,15 +51,15 @@ def create_pipeline(context, streaming_context):
         return bool(groups)
 
     def drop_intermediary_events(groups):
-        def get_timestamp((event, segment)):
+        def get_timestamp((event, _)):
             return event.timestamp
 
         result = []
-        for segment, events in groups:
+        for cnn, events in groups:
             start_event = min(events, key=get_timestamp)
             end_event   = max(events, key=get_timestamp)
 
-            result.append( (segment, (start_event, end_event)) )
+            result.append( (cnn, (start_event, end_event)) )
 
         return result
 
@@ -67,7 +67,7 @@ def create_pipeline(context, streaming_context):
     kafka_stream = create_stream(streaming_context)
     kafka_stream.flatMap(lookup_segment, preservesPartitioning=True)            \
                 .map(rekey_by_car_id, preservesPartitioning=True)               \
-                .reduceByKeyAndWindow(collect_car_events, uncollect_car_events,
+                .reduceByKeyAndWindow(combine_events, expire_old_events,
                                       windowDuration=120, slideDuration=30,
                                       numPartitions=1)                          \
                 .mapValues(group_by_cnn)                                        \
