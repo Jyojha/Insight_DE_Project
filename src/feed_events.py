@@ -110,7 +110,7 @@ def replay_events(all_events, topic_name=settings.KAFKA_TOPIC):
 
     results = []
     for event in all_events:
-        event.timestamp = math.trunc(time.time())
+        # event.timestamp = math.trunc(time.time())
         future = producer.send(topic, event, event.get_key())
         results.append(future)
 
