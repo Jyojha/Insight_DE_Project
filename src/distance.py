@@ -115,8 +115,8 @@ class StreetInfoIndex(object):
             self._index[info.cnn] = info
 
     def get_movement_info(self,
-                          start_event, start_segment,
-                          end_event, end_segment):
+                          (start_event, start_segment),
+                          (end_event, end_segment)):
 
         start_coords = [start_event.lon, start_event.lat]
         end_coords   = [end_event.lon, end_event.lat]
@@ -141,3 +141,6 @@ class StreetInfoIndex(object):
         direction = street.get_direction(start, end)
 
         return distance, direction
+
+    def get_info(self, cnn):
+        return self._index[cnn]

@@ -10,6 +10,7 @@ from itertools import groupby
 import json
 
 from config import settings
+from distance import StreetInfoIndex
 
 def create_stream(streaming_context):
     topics = [settings.KAFKA_TOPIC]
@@ -72,6 +73,44 @@ def create_pipeline(context, streaming_context):
 
         return result
 
+    def drop_car_id( (car, cnn_groups) ):
+        return cnn_groups
+
+    street_info_index = context.broadcast(StreetInfoIndex())
+    def find_distance_and_time((cnn, (start_event, end_event))):
+        index = street_info_index.value
+
+        start_ts = start_event[0].timestamp
+        end_ts   = end_event[0].timestamp
+
+        time_taken = end_ts - start_ts
+
+        info = index.get_info(cnn)
+        distance, direction = index.get_movement_info(start_event, end_event)
+
+        return ((cnn, direction), (distance, time_taken))
+
+    def sum_distance_and_time( (d1, t1), (d2, t2) ):
+        return (d1 + d2, t1 + t2)
+
+    def compute_expected_time_and_speed( (street, (totalDistance, totalTime)) ):
+        cnn = street[0]
+
+        info = street_info_index.value.get_info(cnn)
+        length = info.length
+
+        try:
+            avg_speed = totalDistance / totalTime
+            expected_time = length / avg_speed
+        except ZeroDivisionError:
+            # Just assume that things are very slow. Ten meters per minute
+            # seems slow enough.
+            avg_speed = 10 / 60.
+            expected_time = length / avg_speed
+
+        street_info = street_info_index.value.get_info(cnn)
+
+        return (street_info, expected_time, avg_speed)
 
     kafka_stream = create_stream(streaming_context)
     kafka_stream.flatMap(lookup_segment, preservesPartitioning=True)            \
@@ -82,7 +121,13 @@ def create_pipeline(context, streaming_context):
                 .mapValues(group_by_cnn)                                        \
                 .mapValues(drop_short_cnn_groups)                               \
                 .filter(has_cnn_groups)                                         \
-                .mapValues(drop_intermediary_events).pprint()
+                .mapValues(drop_intermediary_events)                            \
+                .flatMap(drop_car_id, preservesPartitioning=True)               \
+                .map(find_distance_and_time, preservesPartitioning=True)        \
+                .reduceByKey(sum_distance_and_time)                             \
+                .map(compute_expected_time_and_speed,
+                     preservesPartitioning=True)                                \
+                .filter(lambda (street, time, speed): speed > 10).pprint()
 
 def create_context():
     context = SparkContext(appName=settings.SPARK_APP_NAME)
