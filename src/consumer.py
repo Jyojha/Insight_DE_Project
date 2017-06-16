@@ -42,10 +42,7 @@ def create_pipeline(context, streaming_context):
             return index_item.obj.cnn
 
         for cnn, group in groupby(sorted(items, key=get_cnn), get_cnn):
-            group_list = list(group)
-            _, index_item = group_list[0]
-
-            yield index_item, [event for event, _ in group_list]
+            yield cnn, list(group)
 
     def drop_short_cnn_groups(groups):
         return filter(lambda (_, events): len(events) > 1, groups)
@@ -54,7 +51,7 @@ def create_pipeline(context, streaming_context):
         return bool(groups)
 
     def drop_intermediary_events(groups):
-        def get_timestamp(event):
+        def get_timestamp((event, segment)):
             return event.timestamp
 
         result = []
