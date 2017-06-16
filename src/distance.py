@@ -103,7 +103,7 @@ class StreetInfo(object):
     def __repr__(self):
         return 'StreetInfo(**%s)' % self.__dict__
 
-class CarTracker(object):
+class StreetInfoIndex(object):
     def __init__(self, path=settings.SEGMENTS_PATH):
         from data_utils import read_segments
 
@@ -114,7 +114,10 @@ class CarTracker(object):
             info = StreetInfo(segment)
             self._index[info.cnn] = info
 
-    def get_distance(self, start_event, start_segment, end_event, end_segment):
+    def get_movement_info(self,
+                          start_event, start_segment,
+                          end_event, end_segment):
+
         start_coords = [start_event.lon, start_event.lat]
         end_coords   = [end_event.lon, end_event.lat]
 
