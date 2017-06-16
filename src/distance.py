@@ -121,8 +121,8 @@ class StreetInfoIndex(object):
         start_coords = [start_event.lon, start_event.lat]
         end_coords   = [end_event.lon, end_event.lat]
 
-        cnn     = start_segment.obj.cnn
-        end_cnn = end_segment.obj.cnn
+        cnn     = start_segment.cnn
+        end_cnn = end_segment.cnn
 
         if cnn != end_cnn:
             raise AssertionError("start cnn %s is different "
