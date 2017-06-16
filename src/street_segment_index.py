@@ -17,7 +17,7 @@ from distance import EARTH_RADIUS
 
 logger = log.get_logger()
 
-class StreetSubsegment(object):
+class StreetSubSegment(object):
     def __init__(self, **kwargs):
         self.cnn = kwargs['cnn']
         self.name = kwargs['name']
@@ -35,7 +35,7 @@ class StreetSubsegment(object):
         del dict['src_xyz']
         del dict['dst_xyz']
 
-        return 'StreetSubsegment(**%s, ...)' % str(dict)
+        return 'StreetSubSegment(**%s, ...)' % str(dict)
 
 class SerializableIndex(Index):
     def __init__(self, *args, **kwargs):
@@ -173,7 +173,7 @@ class StreetSegmentIndex(object):
             xyz2 = self._toXYZ(node2)
             bbox = self._bbox(xyz1, xyz2)
 
-            yield (cnn, bbox, StreetSubsegment(cnn=cnn,
+            yield (cnn, bbox, StreetSubSegment(cnn=cnn,
                                                name=name,
                                                src=node1,
                                                dst=node2,
