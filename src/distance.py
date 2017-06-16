@@ -1,11 +1,12 @@
 # For details see http://www.movable-type.co.uk/scripts/gis-faq-5.1.html
 
 from math import asin, sin, cos, sqrt, radians
+from pysal.cg.sphere import RADIUS_EARTH_KM
 
 from config import settings
 
 # in meters
-EARTH_RADIUS = 6367000
+EARTH_RADIUS = RADIUS_EARTH_KM * 1000
 
 def haversin(x, y, R=EARTH_RADIUS):
     lon1, lat1 = x[0], x[1]

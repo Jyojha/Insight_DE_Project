@@ -4,7 +4,7 @@ from numpy import array, cross, dot
 from numpy.linalg import norm
 from scipy.spatial.distance import euclidean
 
-from pysal.cg.sphere import toXYZ, RADIUS_EARTH_KM
+from pysal.cg.sphere import toXYZ
 from rtree.index import Index, Property
 
 
@@ -13,10 +13,9 @@ import log
 from data_utils import read_segments, get_resource
 from config import settings
 from utils import timeit
+from distance import EARTH_RADIUS
 
 logger = log.get_logger()
-
-RADIUS_EARTH_M = RADIUS_EARTH_KM * 1000
 
 class StreetSegment(object):
     def __init__(self, cnn, name):
@@ -117,7 +116,7 @@ class StreetSegmentIndex(object):
     def _toXYZ(self, point):
         x, y, z = toXYZ(point)
 
-        return (x * RADIUS_EARTH_M, y * RADIUS_EARTH_M, z * RADIUS_EARTH_M)
+        return (x * EARTH_RADIUS, y * EARTH_RADIUS, z * EARTH_RADIUS)
 
     def _bbox(self, xyz1, xyz2):
         x1, y1, z1 = xyz1
