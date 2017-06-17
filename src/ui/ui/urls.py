@@ -15,8 +15,18 @@ Including another URLconf
 """
 from django.conf.urls import url
 from django.contrib import admin
-from views import find_path
+from views import index, find_path, matching_streets, intersecting_streets
 
 urlpatterns = [
+
+    #when the website address is passed in the browser, it handles the default page
+    url(r'^$', index),
+    #enter source street
+    url(r'^api/matching_streets/$', matching_streets),
+    #enter intersecting street
+    url(r'^api/intersecting_streets/$', intersecting_streets),
+    #finding the route between source and destination entered
     url(r'^api/find_path/$', find_path),
+
+
 ]

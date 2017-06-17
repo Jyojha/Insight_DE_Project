@@ -48,10 +48,12 @@ def find_path(from_cnn, to_cnn):
         for to_node, rel in zip(nodes[1:], rels):
             from_name = from_node['name']
             from_cnn = from_node['cnn']
+            from_coords = (from_node['lat'], from_node['lon'])
             to_name = to_node['name']
             to_cnn = to_node['cnn']
+            to_coords = (to_node['lat'], to_node['lon'])
             street = rel['street']
-            centerline = zip(rel['longitudes'], rel['latitudes'])
+            centerline = zip(rel['cl_latitudes'], rel['cl_longitudes'])
             length = rel['length']
 
             avg_speed = rel.get('average_speed')
@@ -61,8 +63,10 @@ def find_path(from_cnn, to_cnn):
 
             resp_item = {'from_name': from_name,
                          'from_cnn': from_cnn,
+                         'from_coords': from_coords,
                          'to_name': to_name,
                          'to_cnn': to_cnn,
+                         'to_coords': to_coords,
                          'street': street,
                          'centerline': centerline,
                          'length': length,
@@ -111,3 +115,37 @@ def update_times(items):
             return
 
         logger.debug('Successfully updated %d neo4j graph edges' % len(updates))
+
+def find_matching_streets(name):
+    with driver.session() as db:
+        pattern = '(?i)%s.*' % name
+        match_strtseg = db.run('''Match ()-[s:Segment]-()
+                                  WHERE s.street =~ {pattern}
+                                  RETURN DISTINCT s.street AS street
+                                  ORDER BY s.street
+                                  LIMIT 20''', pattern=pattern)
+
+        result = []
+        for row in match_strtseg.records():
+            result.append(row['street'])
+
+        return result
+
+def find_street_intersections(street):
+    with driver.session() as db:
+        match_intersection = db.run('''Match (m)-[s:Segment]-(n)
+                                        WHERE s.street = {street}
+                                        RETURN DISTINCT m.name as intersecting_strt,
+                                        m.cnn as cnn''', street=street)
+
+
+        result = []
+        for intersection in match_intersection.records():
+            intersecting = intersection['intersecting_strt']
+            cnn = intersection['cnn']
+
+            result.extend([(name, cnn) for name in intersecting if name != street])
+
+        return result
+
+
