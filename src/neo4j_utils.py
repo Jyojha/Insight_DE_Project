@@ -132,19 +132,19 @@ def find_matching_streets(name):
 
 def find_street_intersections(street):
     with driver.session() as db:
-        match_intersection = db.run('''Match (m)-[s:Segment]-(n)
+        match_intersections = db.run('''MATCH (m)-[s:Segment]-(n)
                                         WHERE s.street = {street}
-                                        RETURN DISTINCT m.name as intersecting_strt,
-                                        m.cnn as cnn''', street=street)
+                                        RETURN DISTINCT m.name AS intersecting_strt,
+                                        m.cnn AS cnn''', street=street)
 
 
         result = []
-        for intersection in match_intersection.records():
+        for intersection in match_intersections.records():
             intersecting = intersection['intersecting_strt']
             cnn = intersection['cnn']
 
             result.extend([(name, cnn) for name in intersecting if name != street])
 
-        return result
+        return sorted(result)
 
 
