@@ -285,16 +285,17 @@ function renderPath(response) {
 
   routeLayer = L.featureGroup();
 
-  route = L.polyline([], {"color": 'blue'});
+  route = L.polyline([], {"color": 'magenta'});
+
 
   for (i in response.path) {
     var segment = response.path[i];
     var marker;
 
     if (i == 0) {
-      marker = L.circleMarker(segment.from_coords, {"radius": 5, "color":'darkorange', "fillOpacity": 0.8});
+      marker = L.circleMarker(segment.from_coords, {"radius": 8, "color":'#ffcc00', "fillOpacity": 1});
     } else {
-      marker = L.circleMarker(segment.from_coords, {"radius": 5, "fillOpacity": 0.8});
+      marker = L.circleMarker(segment.from_coords, {"radius": 5, "fillOpacity": 1});
     }
 
     routeLayer.addLayer(marker);
@@ -307,7 +308,7 @@ function renderPath(response) {
   routeLayer.addLayer(route);
 
   var array_len = response.path.length;
-  marker = L.circleMarker(response.path[array_len-1].to_coords, {"radius": 5, "color": 'green', "fillOpacity": 0.8});
+  marker = L.circleMarker(response.path[array_len-1].to_coords, {"radius": 8, "color": 'purple', "fillOpacity": 1});
   routeLayer.addLayer(marker);
 
   routeLayer.addTo(map);
