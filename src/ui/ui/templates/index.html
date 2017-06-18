@@ -1,4 +1,6 @@
 <head>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
   <script src="https://unpkg.com/leaflet@1.0.3/dist/leaflet.js"
           integrity="sha512-A7vV8IFfih/D732iSSKi20u/ooOfj/AGehOKq0f4vLT1Zr2Y+RX7C+w8A1gaSasGtRUZpF/NZgzSAu4/Gc41Lg=="
           crossorigin=""></script>
@@ -9,33 +11,97 @@
   <script src="https://code.jquery.com/ui/1.12.1/jquery-ui.js"></script>
   <link rel="stylesheet" href="//code.jquery.com/ui/1.12.1/themes/base/jquery-ui.css">
 
+  <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css"
+        integrity="sha384-BVYiiSIFeK1dGmJRAkycuHAHRg32OmUcww7on3RYdg4Va+PmSTsz/K68vbdEjh4u"
+        crossorigin="anonymous">
+
   <style>
-  .ui-autocomplete {
-      max-height: 100px;
-      overflow-y: auto;
-      /* prevent horizontal scrollbar */
-      overflow-x: hidden;
-  }
+.ui-autocomplete {
+    max-height: 250px;
+    overflow-y: auto;
+    /* prevent horizontal scrollbar */
+    overflow-x: hidden;
+}
+
+.vertical-center {
+    min-height: 100%;  /* Fallback for vh unit */
+    min-height: 100vh; /* You might also want to use
+                        'height' property instead.
+
+                        Note that for percentage values of
+                        'height' or 'min-height' properties,
+                        the 'height' of the parent element
+                        should be specified explicitly.
+
+                        In this case the parent of '.vertical-center'
+                        is the <body> element */
+
+    /* Make it a flex container */
+    display: -webkit-box;
+    display: -moz-box;
+    display: -ms-flexbox;
+    display: -webkit-flex;
+    display: flex;
+
+    /* Align the bootstrap's container vertically */
+    -webkit-box-align : center;
+    -webkit-align-items : center;
+    -moz-box-align : center;
+    -ms-flex-align : center;
+    align-items : center;
+
+    /* In legacy web browsers such as Firefox 9
+     we need to specify the width of the flex container */
+    width: 100%;
+
+    /* Also 'margin: 0 auto' doesn't have any effect on flex items in such web browsers
+     hence the bootstrap's container won't be aligned to the center anymore.
+
+     Therefore, we should use the following declarations to get it centered again */
+    -webkit-box-pack : center;
+    -moz-box-pack : center;
+    -ms-flex-pack : center;
+    -webkit-justify-content : center;
+    justify-content : center;
+}
   </style>
 </head>
 
 <body>
-  <div style="width: 100%; height: 75%;" id="mapid"></div>
-  <div class="ui-widget">
-    <label for="source_street1">Source Intersecting_Street1: </label>
-    <input id="source_street1">
-  </div>
-  <div class="ui-widget">
-    <label for="source_street2">Source Intersecting_Street2: </label>
-    <input id="source_street2">
-  </div>
-  <div class="ui-widget">
-    <label for="destination_street1">Destination Intersecting_Street1: </label>
-    <input id="destination_street1">
-  </div>
-  <div class="ui-widget">
-    <label for="destination_street2">Destination Intersecting_Street2: </label>
-    <input id="destination_street2">
+  <div class="container">
+
+    <div class="row vertical-center">
+
+      <div class="col-md-3">
+        <form>
+          <h4>Source intersection:</h4>
+
+          <div class="form-group">
+            <input class="form-control" id="source_street1" placeholder="Street 1">
+          </div>
+          <div class="form-group">
+            <input class="form-control" id="source_street2" placeholder="Street 2">
+          </div>
+        </form>
+        <form>
+          <h4>Destination intersection:</h4>
+
+          <div class="form-group">
+            <input class="form-control" id="destination_street1" placeholder="Street 1">
+          </div>
+          <div class="form-group">
+            <input class="form-control" id="destination_street2" placeholder="Street 2">
+          </div>
+        </form>
+      </div>
+
+
+      <div class="col-md-9">
+        <div style="height: 800px" id="mapid"></div>
+      </div>
+
+    </div>
+
   </div>
   <script type="text/javascript">
 
