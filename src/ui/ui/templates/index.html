@@ -122,8 +122,6 @@ function init() {
     initStreetControls();
 
     map.setView([37.774929,-122.419416], 13);
-
-    findPath(22881000, 33620000);
 }
 
 var src_street1;
@@ -272,24 +270,20 @@ function findPath(from_cnn, to_cnn) {
   $.ajax("/api/find_path/", {data: data}).done(renderPath);
 }
 
-var route;
-var markers = [];
+var routeLayer;
 
 function removePath() {
-  if (route != undefined) {
-    route.remove();
-    route = undefined;
+  if (routeLayer != undefined) {
+    routeLayer.remove();
   }
 
-  for (i in markers) {
-    markers[i].remove();
-  }
-
-  markers = [];
+  routeLayer = undefined;
 }
 
 function renderPath(response) {
   removePath();
+
+  routeLayer = L.featureGroup();
 
   route = L.polyline([], {"color": 'blue'});
 
@@ -298,23 +292,27 @@ function renderPath(response) {
     var marker;
 
     if (i == 0) {
-      marker = L.circleMarker(segment.from_coords, {"radius": 5, "color":'darkorange', "fillOpacity": 0.8}).addTo(map);
+      marker = L.circleMarker(segment.from_coords, {"radius": 5, "color":'darkorange', "fillOpacity": 0.8});
     } else {
-      marker = L.circleMarker(segment.from_coords, {"radius": 5, "fillOpacity": 0.8}).addTo(map);
+      marker = L.circleMarker(segment.from_coords, {"radius": 5, "fillOpacity": 0.8});
     }
 
-    markers.push(marker);
+    routeLayer.addLayer(marker);
 
     for (j in segment.centerline) {
       route.addLatLng(segment.centerline[j]);
     }
   }
 
-  route.addTo(map);
+  routeLayer.addLayer(route);
 
   var array_len = response.path.length;
-  marker = L.circleMarker(response.path[array_len-1].to_coords, {"radius": 5, "color": 'green', "fillOpacity": 0.8}).addTo(map);
-  markers.push(marker);
+  marker = L.circleMarker(response.path[array_len-1].to_coords, {"radius": 5, "color": 'green', "fillOpacity": 0.8});
+  routeLayer.addLayer(marker);
+
+  routeLayer.addTo(map);
+
+  map.fitBounds(routeLayer.getBounds(), {padding: [50, 50]});
 }
   </script>
 <body>
