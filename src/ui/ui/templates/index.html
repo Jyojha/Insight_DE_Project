@@ -5,14 +5,21 @@
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.0.3/dist/leaflet.css"
         integrity="sha512-07I2e+7D8p6he1SIM+1twR5TIrhUQn9+I6yjqD53JQjFiMf8EtC93ty0/5vJTZGF8aAocvHYNEDJajGdNx1IsQ=="
         crossorigin=""/>
-  <script src="https://unpkg.com/jquery@3.2.1"></script>
-
   <script src="https://code.jquery.com/jquery-1.12.4.js"></script>
   <script src="https://code.jquery.com/ui/1.12.1/jquery-ui.js"></script>
   <link rel="stylesheet" href="//code.jquery.com/ui/1.12.1/themes/base/jquery-ui.css">
+
+  <style>
+  .ui-autocomplete {
+      max-height: 100px;
+      overflow-y: auto;
+      /* prevent horizontal scrollbar */
+      overflow-x: hidden;
+  }
+  </style>
 </head>
 
-<body onload="init();">
+<body>
   <div style="width: 100%; height: 75%;" id="mapid"></div>
   <div class="ui-widget">
     <label for="source_street1">Source Intersecting_Street1: </label>
@@ -32,6 +39,8 @@
   </div>
   <script type="text/javascript">
 
+$().ready(init);
+
 var map;
 function init() {
     map = L.map('mapid');
@@ -46,7 +55,6 @@ function init() {
 
     initStreetControls();
 
-
     map.setView([37.774929,-122.419416], 13);
 
     findPath(22881000, 33620000);
@@ -58,7 +66,12 @@ var dst_street1;
 var dst_street2;
 
 var src_cnn;
+var src1_selected;
+var src2_selected;
+
 var dst_cnn;
+var dst1_selected;
+var dst2_selected;
 
 function initStreetControls() {
   src_street1 = $("#source_street1");
@@ -66,36 +79,91 @@ function initStreetControls() {
   dst_street1 = $("#destination_street1");
   dst_street2 = $("#destination_street2");
 
+  src_street1.val("");
+  src_street2.val("");
+  dst_street1.val("");
+  dst_street2.val("");
+
   src_street1.autocomplete({
     source: matchingStreetSource,
+    focus: function (event, ui) {return false},
+    select: function (event, ui) {
+      src1_selected = true;
+
+      findIntersectingStreets(ui.item.value, function (data) {
+        src_street2.attr("disabled", false);
+        src_street2.autocomplete("option", "source", data);
+        src_street2.autocomplete("search", "");
+        src_street2.focus();
+      });
+    },
     minLength: 3
   });
 
+  src_street1.on('input', function () {
+    src1_selected = false;
+    src2_selected = false;
+    src_street2.autocomplete("option", "source", []);
+    src_street2.val("");
+    src_street2.attr('disabled', true);
+  });
+
   src_street2.autocomplete({
-    source: function(request, responseCallback) {
-      intersectingStreetSource(src_street1, request, responseCallback);
-    },
     select: function (event, ui) {
       src_cnn = ui.item.value;
+      src2_selected = true;
       ui.item.value = ui.item.label;
+      maybeFindPath();
     },
+    focus: function (event, ui) {return false},
     minLength: 0
+  });
+
+  src_street2.attr('disabled', true);
+
+  src_street2.on('input', function () {
+    src2_selected = false;
   });
 
   dst_street1.autocomplete({
     source: matchingStreetSource,
+    focus: function (event, ui) {return false},
+    select: function (event, ui) {
+      dst1_selected = true;
+
+      findIntersectingStreets(ui.item.value, function (data) {
+        dst_street2.attr("disabled", false);
+        dst_street2.autocomplete("option", "source", data);
+        dst_street2.autocomplete("search", "");
+        dst_street2.focus();
+      });
+    },
     minLength: 3
   });
 
+  dst_street1.on('input', function () {
+    dst1_selected = false;
+    dst2_selected = false;
+    dst_street2.autocomplete("option", "source", []);
+    dst_street2.val("");
+    dst_street2.attr('disabled', true);
+  });
+
  dst_street2.autocomplete({
-    source: function(request, responseCallback) {
-      intersectingStreetSource(dst_street1, request, responseCallback);
-    },
     select: function (event, ui) {
       dst_cnn = ui.item.value;
+      dst2_selected = true;
       ui.item.value = ui.item.label;
+      maybeFindPath();
     },
+    focus: function (event, ui) {return false},
     minLength: 0
+  });
+
+  dst_street2.attr('disabled', true);
+
+  dst_street2.on('input', function () {
+      dst2_selected = false;
   });
 }
 
@@ -107,8 +175,7 @@ function matchingStreetSource(request, responseCallback) {
   });
 }
 
-function intersectingStreetSource(streetOneInput, request, responseCallback) {
-  var street = streetOneInput.val();
+function findIntersectingStreets(street, callback) {
   var data = {street: street};
 
   $.ajax("/api/intersecting_streets", {data: data}).done(function (response) {
@@ -122,9 +189,15 @@ function intersectingStreetSource(streetOneInput, request, responseCallback) {
       result.push({label: name, value: cnn});
     }
 
-    responseCallback(result);
+    callback(result);
   });
 
+}
+
+function maybeFindPath() {
+  if (src1_selected && src2_selected && dst1_selected && dst2_selected) {
+    findPath(src_cnn, dst_cnn);
+  }
 }
 
 function findPath(from_cnn, to_cnn) {
@@ -158,7 +231,7 @@ function renderPath(response) {
     var segment = response.path[i];
     var marker;
 
-    if (i == 0){
+    if (i == 0) {
       marker = L.circleMarker(segment.from_coords, {"radius": 5, "color":'darkorange', "fillOpacity": 0.8}).addTo(map);
     } else {
       marker = L.circleMarker(segment.from_coords, {"radius": 5, "fillOpacity": 0.8}).addTo(map);
@@ -169,7 +242,6 @@ function renderPath(response) {
     for (j in segment.centerline) {
       route.addLatLng(segment.centerline[j]);
     }
-
   }
 
   route.addTo(map);
