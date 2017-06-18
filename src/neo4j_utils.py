@@ -118,12 +118,11 @@ def update_times(items):
 
 def find_matching_streets(name):
     with driver.session() as db:
-        pattern = '(?i)%s.*' % name
         match_strtseg = db.run('''Match ()-[s:Segment]-()
-                                  WHERE s.street =~ {pattern}
+                                  WHERE lower(s.street) CONTAINS lower({name})
                                   RETURN DISTINCT s.street AS street
                                   ORDER BY s.street
-                                  LIMIT 20''', pattern=pattern)
+                                  LIMIT 20''', name=name)
 
         result = []
         for row in match_strtseg.records():
