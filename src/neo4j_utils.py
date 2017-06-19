@@ -1,3 +1,5 @@
+from itertools import groupby
+
 from neo4j.v1 import GraphDatabase, basic_auth
 from config import settings
 
@@ -42,7 +44,7 @@ def find_path(from_cnn, to_cnn):
         rels = path.relationships
         nodes = path.nodes
 
-        result = []
+        route = []
         from_node = nodes[0]
 
         for to_node, rel in zip(nodes[1:], rels):
@@ -73,9 +75,38 @@ def find_path(from_cnn, to_cnn):
                          'average_speed': avg_speed,
                          'expected_time': expected_time}
 
-            result.append(resp_item)
+            route.append(resp_item)
 
-        return result
+        simplified_route = []
+        for _, group in groupby(route, lambda item: item['street']):
+            group = list(group)
+
+            first = group[0]
+            last  = group[-1]
+
+            centerline    = []
+            length        = 0
+            expected_time = 0
+
+            for segment in group:
+                centerline.extend(segment['centerline'])
+
+                length        += segment['length']
+                expected_time += segment['expected_time']
+
+            average_speed = length / expected_time
+
+            first['to_name']       = last['to_name']
+            first['to_cnn']        = last['to_cnn']
+            first['to_coords']     = last['to_coords']
+            first['centerline']    = centerline
+            first['length']        = length
+            first['expected_time'] = expected_time
+            first['average_speed'] = average_speed
+
+            simplified_route.append(first)
+
+        return simplified_route
 
 def update_times(items):
     updates = []
