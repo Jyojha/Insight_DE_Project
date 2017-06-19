@@ -135,10 +135,6 @@ def create_pipeline(context, streaming_context):
                      preservesPartitioning=True)                                \
                 .repartition(1).foreachRDD(lambda rdd: update_times(rdd.collect()))
 
-    # kafka_stream.filter(lambda (street, direction, time, speed): speed > 10) \
-    #             .map(lambda (street, direction, time, speed):
-    #                  (street.cnn, street.name, direction, time, speed)).pprint()
-
 def create_context():
     context = SparkContext(appName=settings.SPARK_APP_NAME)
     context.setLogLevel("WARN")
