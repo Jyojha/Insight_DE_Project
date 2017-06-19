@@ -16,6 +16,10 @@
         crossorigin="anonymous">
 
   <style>
+.street-control {
+    border-width: 2px;
+}
+
 .ui-autocomplete {
     max-height: 250px;
     overflow-y: auto;
@@ -77,20 +81,20 @@
           <h4>Source intersection:</h4>
 
           <div class="form-group">
-            <input class="form-control" id="source_street1" placeholder="Street 1">
+            <input class="form-control street-control" id="source_street1" placeholder="Street 1">
           </div>
           <div class="form-group">
-            <input class="form-control" id="source_street2" placeholder="Street 2">
+            <input class="form-control street-control" id="source_street2" placeholder="Street 2">
           </div>
         </form>
         <form>
           <h4>Destination intersection:</h4>
 
           <div class="form-group">
-            <input class="form-control" id="destination_street1" placeholder="Street 1">
+            <input class="form-control street-control" id="destination_street1" placeholder="Street 1">
           </div>
           <div class="form-group">
-            <input class="form-control" id="destination_street2" placeholder="Street 2">
+            <input class="form-control street-control" id="destination_street2" placeholder="Street 2">
           </div>
         </form>
       </div>
@@ -151,12 +155,19 @@ var dst_street1;
 var dst_street2;
 
 var src_cnn;
-var src1_selected;
-var src2_selected;
-
 var dst_cnn;
-var dst1_selected;
-var dst2_selected;
+
+function setError(control) {
+  control.parent().removeClass('has-success').addClass('has-error');
+}
+
+function setSuccess(control) {
+  control.parent().removeClass('has-error').addClass('has-success');
+}
+
+function isSelected(control) {
+  return control.parent().hasClass('has-success');
+}
 
 function initStreetControls() {
   src_street1 = $("#source_street1");
@@ -173,7 +184,7 @@ function initStreetControls() {
     source: matchingStreetSource,
     focus: function (event, ui) {return false},
     select: function (event, ui) {
-      src1_selected = true;
+      setSuccess(src_street1);
 
       findIntersectingStreets(ui.item.value, function (data) {
         src_street2.attr("disabled", false);
@@ -186,8 +197,8 @@ function initStreetControls() {
   });
 
   src_street1.on('input', function () {
-    src1_selected = false;
-    src2_selected = false;
+    setError(src_street1);
+    setError(src_street2);
     src_street2.autocomplete("option", "source", []);
     src_street2.val("");
     src_street2.attr('disabled', true);
@@ -196,7 +207,7 @@ function initStreetControls() {
   src_street2.autocomplete({
     select: function (event, ui) {
       src_cnn = ui.item.value;
-      src2_selected = true;
+      setSuccess(src_street2);
       ui.item.value = ui.item.label;
       maybeFindPath();
     },
@@ -207,14 +218,14 @@ function initStreetControls() {
   src_street2.attr('disabled', true);
 
   src_street2.on('input', function () {
-    src2_selected = false;
+    setError(src_street2);
   });
 
   dst_street1.autocomplete({
     source: matchingStreetSource,
     focus: function (event, ui) {return false},
     select: function (event, ui) {
-      dst1_selected = true;
+      setSuccess(dst_street1);
 
       findIntersectingStreets(ui.item.value, function (data) {
         dst_street2.attr("disabled", false);
@@ -227,8 +238,9 @@ function initStreetControls() {
   });
 
   dst_street1.on('input', function () {
-    dst1_selected = false;
-    dst2_selected = false;
+    setError(dst_street1);
+    setError(dst_street2);
+
     dst_street2.autocomplete("option", "source", []);
     dst_street2.val("");
     dst_street2.attr('disabled', true);
@@ -237,7 +249,7 @@ function initStreetControls() {
  dst_street2.autocomplete({
     select: function (event, ui) {
       dst_cnn = ui.item.value;
-      dst2_selected = true;
+      setSuccess(dst_street2);
       ui.item.value = ui.item.label;
       maybeFindPath();
     },
@@ -248,8 +260,13 @@ function initStreetControls() {
   dst_street2.attr('disabled', true);
 
   dst_street2.on('input', function () {
-      dst2_selected = false;
+      setError(dst_street2);
   });
+
+  setError(src_street1);
+  setError(src_street2);
+  setError(dst_street1);
+  setError(dst_street2);
 }
 
 function matchingStreetSource(request, responseCallback) {
@@ -280,7 +297,8 @@ function findIntersectingStreets(street, callback) {
 }
 
 function maybeFindPath() {
-  if (src1_selected && src2_selected && dst1_selected && dst2_selected) {
+  if (isSelected(src_street1) && isSelected(src_street2) &&
+      isSelected(dst_street1) && isSelected(dst_street2)) {
     findPath(src_cnn, dst_cnn);
   }
 }
