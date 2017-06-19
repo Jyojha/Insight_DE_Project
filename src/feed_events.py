@@ -3,6 +3,7 @@ from kafka.partitioner.roundrobin import RoundRobinPartitioner
 from kafka.errors import KafkaError
 import json
 from os.path import basename, join
+from sys import exit
 from datetime import datetime, timedelta
 import time
 import math
@@ -10,6 +11,10 @@ from glob import glob
 
 from car_events_pb2 import CarId, CarEvent
 from config import settings
+
+import log
+
+logger = log.get_logger()
 
 def datetime_to_timestamp(dt):
     return math.trunc(time.mktime(dt.timetuple()))
@@ -104,13 +109,24 @@ def create_kafka_producer(bootstrap_servers=settings.KAFKA_URL):
 
     return producer
 
-def replay_events(all_events, topic_name=settings.KAFKA_TOPIC):
-    producer = create_kafka_producer()
-    topic = topic_name
+def get_batch(events, end_ts):
+    batch = []
+    for i, event in enumerate(events):
+        if event.timestamp >= end_ts:
+            return batch, events[i:]
 
+        batch.append(event)
+
+    return batch, []
+
+def adjust_timestamps(batch, start_ts, now):
+    for event in batch:
+        time_delta = event.timestamp - start_ts
+        event.timestamp = now + time_delta
+
+def send_batch(producer, topic, batch):
     results = []
-    for event in all_events:
-        # event.timestamp = math.trunc(time.time())
+    for event in batch:
         future = producer.send(topic, event, event.get_key())
         results.append(future)
 
@@ -120,10 +136,44 @@ def replay_events(all_events, topic_name=settings.KAFKA_TOPIC):
         if result.failed():
             raise result.exception
 
+def replay_events(all_events, topic_name=settings.KAFKA_TOPIC, batch_size=10):
+    now = time.time()
+    start_ts = all_events[0].timestamp
+
+    producer = create_kafka_producer()
+    topic = topic_name
+
+    while True:
+        end_ts = start_ts + batch_size
+
+        batch, all_events = get_batch(all_events, end_ts)
+        adjust_timestamps(batch, start_ts, math.trunc(now))
+
+        if batch:
+            logger.info("Sending a batch of %d events", len(batch))
+            send_batch(producer, topic, batch)
+            logger.info("Sent the batch successfully")
+        else:
+            logger.info("Batch is empty.")
+
+        if not all_events:
+            return
+
+        start_ts = end_ts
+
+        now = now + batch_size
+        time_left = now - time.time()
+
+        time.sleep(time_left)
+
 if __name__ == '__main__':
-    print "Reading events"
+    logger.info("Reading events")
     events = read_directory(START_WINDOW_TS, STOP_WINDOW_TS, "./cabspottingdata")
-    print "Number of events to replay: %d" % len(events)
-    print "Replaying the events"
+    if not events:
+        logger.info("No events in the specified window")
+        exit(0)
+
+    logger.info("Number of events to replay: %d", len(events))
+    logger.info("Replaying the events")
     replay_events(events)
-    print "Replayed all events successfully"
+    logger.info("Replayed all events successfully")
