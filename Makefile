@@ -16,3 +16,5 @@ JOB_SOURCES = $(shell find src/config/ -type f -name *.py) \
 
 job.zip: $(JOB_SOURCES)
 	cd src/ && zip ../job.zip $(shell echo $(JOB_SOURCES) | sed -e 's,src/,,g')
+
+job: job.zip
