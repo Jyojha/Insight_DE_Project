@@ -13,7 +13,7 @@ if settings.SHORTEST_PATH_ALGO == 'dijkstra':
     FIND_PATH_QUERY='''MATCH (n:Intersection {cnn: {from_cnn}})
                        WITH n
                        MATCH (m:Intersection {cnn: {to_cnn}})
-                       CALL apoc.algo.dijkstraWithDefaultWeight(n, m, 'Segment>', 'expected_time', 1200)
+                       CALL apoc.algo.dijkstra(n, m, 'Segment>', 'expected_time')
                        YIELD path, weight
                        RETURN path, weight'''
 elif settings.SHORTEST_PATH_ALGO == 'aStar':
@@ -102,7 +102,7 @@ def update_times(items):
                             (t:Intersection {cnn: update.to}),
                             (f)-[s:Segment]->(t)
                       SET s.expected_time = update.time,
-                          s.avg_speed = update.speed
+                          s.average_speed = update.speed
                       RETURN s''', updates=updates)
 
         try:

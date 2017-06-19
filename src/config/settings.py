@@ -3,7 +3,6 @@ from os import path, environ
 
 SPARK_APP_NAME='traffic-processing'
 
-SEGMENTS_PATH = "data/street_segments.pickle"
 DB_URL = 'bolt://localhost'
 USER_NAME = ""
 USER_PASSWORD = ""
@@ -11,7 +10,9 @@ USER_PASSWORD = ""
 KAFKA_URL='localhost:9092'
 KAFKA_TOPIC='traffic-events'
 
+SEGMENTS_PATH = "data/street_segments.pickle"
 STREET_INDEX_PICKLE = 'data/street_segment_index.pickle'
+SPEED_LIMITS_PATH = "data/speeds.json"
 
 LOGGING_LEVEL = logging.DEBUG
 

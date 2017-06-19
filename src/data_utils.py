@@ -1,4 +1,7 @@
+import json
+
 import pandas as pd
+from scipy import constants
 from copy import deepcopy
 from pkg_resources import resource_stream
 
@@ -39,6 +42,10 @@ def read_segments(path=settings.SEGMENTS_PATH):
     segments = normalize_centerlines(pd.read_pickle(get_resource(path)))
     return df_to_dict(add_centerline_lengths(segments))
 
+def read_speed_limits(path=settings.SPEED_LIMITS_PATH):
+    with open(path, 'r') as f:
+        return dict((item['cnn'], item['speed']) for item in json.load(f))
+
 def extract_intersections(segments_list):
     intersection_dict = {}
     intersection_name = {}
@@ -70,7 +77,10 @@ def extract_intersections(segments_list):
 
     return intersections
 
-def post_process_segments(segments):
+def mph2metersps(miles):
+    return (miles * constants.mile) / constants.hour
+
+def post_process_segments(segments, speeds):
     massaged = []
 
     for segment in segments:
@@ -78,13 +88,22 @@ def post_process_segments(segments):
         longitudes = [x[0] for x in centerline]
         latitudes  = [x[1] for x in centerline]
 
-        template = {'cnn': segment['cnn'],
+        cnn = segment['cnn']
+        length = segment['length']
+        speed_limit_mph = speeds[cnn]
+        speed_limit_mps = mph2metersps(speed_limit_mph)
+        time_at_speed_limit = length / speed_limit_mps
+
+        template = {'cnn': cnn,
                     'streetname': segment['streetname'],
                     'classcode': segment['classcode'],
                     'cl_longitudes': longitudes,
                     'cl_latitudes': latitudes,
                     'cl_lengths': segment['centerline_lengths'],
-                    'length': segment['length']}
+                    'length': segment['length'],
+                    'speed_limit': speed_limit_mps,
+                    'speed_limit_mph': speed_limit_mph,
+                    'time_at_speed_limit': time_at_speed_limit}
 
         t, f = segment["to_cnn"], segment["from_cnn"]
 
