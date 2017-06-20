@@ -324,7 +324,7 @@ function renderPath(response) {
 
   routeLayer = L.featureGroup();
 
-  route = L.polyline([], {"color": '#0047ab'});
+  route = L.polyline([], {color: "#0047ab", smoothFactor: 5.0});
 
 
   for (i in response.path) {
@@ -334,7 +334,7 @@ function renderPath(response) {
     if (i == 0) {
       marker = L.marker(segment.from_coords, {icon: yellowIcon});
     } else {
-      marker = L.circleMarker(segment.from_coords, {"radius": 5, "fillOpacity": 1});
+      marker = L.circleMarker(segment.from_coords, {radius: 5, fillOpacity: 1});
     }
 
     routeLayer.addLayer(marker);
