@@ -16,6 +16,10 @@
         crossorigin="anonymous">
 
   <style>
+#route-rows tr {
+    cursor: pointer;
+}
+
 .street-control {
     border-width: 2px;
 }
@@ -72,11 +76,11 @@
 </head>
 
 <body>
-  <div class="container">
+  <div class="container" style="width: 1400px;">
 
     <div class="row vertical-center">
 
-      <div class="col-md-3">
+      <div class="col-md-3" style="display: block; vertical-align: top;">
         <form>
           <h4>Source intersection:</h4>
 
@@ -97,6 +101,30 @@
             <input class="form-control street-control" id="destination_street2" placeholder="Street 2">
           </div>
         </form>
+        <div style="height: 500px; overflow: auto;">
+          <table id="route" class="table table-condensed table-hover hidden">
+            <thead>
+              <tr>
+                <th>
+                  #
+                </th>
+                <th>
+                  Street
+                </th>
+                <th>
+                  Distance
+                </th>
+                <th>
+                  Time
+                </th>
+              </tr>
+            </thead>
+            <tbody id="route-rows" class="small text-overflow">
+            </tbody>
+            <tfoot id="route-footer" class="small text-overflow">
+            </tfoot>
+          </table>
+        </div>
       </div>
 
 
@@ -323,9 +351,14 @@ function renderPath(response) {
   removePath();
 
   routeLayer = L.featureGroup();
+  var route = L.featureGroup();
 
-  route = L.polyline([], {color: "#0047ab", smoothFactor: 5.0});
+  $("#route").removeClass("hidden");
+  $("#route-rows").text("");
+  $("#route-footer").text("");
 
+  var totalDistance = 0;
+  var totalTime = 0;
 
   for (i in response.path) {
     var segment = response.path[i];
@@ -339,9 +372,15 @@ function renderPath(response) {
 
     routeLayer.addLayer(marker);
 
-    for (j in segment.centerline) {
-      route.addLatLng(segment.centerline[j]);
-    }
+    var routeSegment = L.polyline(segment.centerline);
+    setSegmentStyle(routeSegment);
+
+    route.addLayer(routeSegment);
+
+    addSegmentRow(Number(i)+1, segment, routeSegment);
+
+    totalDistance += segment.length;
+    totalTime += segment.expected_time;
   }
 
   routeLayer.addLayer(route);
@@ -352,7 +391,89 @@ function renderPath(response) {
 
   routeLayer.addTo(map);
 
-  map.fitBounds(routeLayer.getBounds(), {padding: [50, 50]});
+  addTotals(totalDistance, totalTime);
+
+  fitBounds(routeLayer);
 }
+
+function fitBounds(layer) {
+  map.fitBounds(layer.getBounds(), {padding: [50, 50]});
+}
+
+function setSegmentStyle(segment) {
+  segment.setStyle({color: "#0047ab", smoothFactor: 5.0, weight: 3});
+}
+
+var currSegment;
+function selectSegment(segment) {
+  if (currSegment != undefined) {
+    setSegmentStyle(currSegment);
+    currSegment = undefined;
+  }
+
+  segment.setStyle({color: "purple", weight: 8});
+  fitBounds(segment);
+
+  currSegment = segment;
+}
+
+function addSegmentRow(i, segment, routeSegment) {
+  var tbody = $("#route-rows");
+  var tr = $(document.createElement("tr"));
+  var td_i = $(document.createElement("td"));
+  var td_street = $(document.createElement("td"));
+  var td_distance = $(document.createElement("td"));
+  var td_time = $(document.createElement("td"));
+
+  tr.click(function () {
+    $("#route-rows tr").removeClass("info");
+    tr.addClass("info");
+    selectSegment(routeSegment);
+  });
+
+  td_i.text(i);
+  td_street.text(segment.street);
+  td_distance.text(formatDistance(segment.length));
+  td_time.text(formatTime(segment.expected_time));
+
+  tr.append(td_i);
+  tr.append(td_street);
+  tr.append(td_distance);
+  tr.append(td_time);
+  tbody.append(tr);
+}
+
+function addTotals(totalDistance, totalTime) {
+  var tfoot = $("#route-footer");
+  var tr = $(document.createElement("tr"));
+  var td_empty = $(document.createElement("td"));
+  var td_total = $(document.createElement("td"));
+  var td_distance = $(document.createElement("td"));
+  var td_time = $(document.createElement("td"));
+
+  td_total.html("<strong>Totals:</strong>");
+  td_distance.html("<strong>"+formatDistance(totalDistance)+"</strong>");
+  td_time.html("<strong>"+formatTime(totalTime)+"</strong>");
+
+  tr.append(td_empty);
+  tr.append(td_total);
+  tr.append(td_distance);
+  tr.append(td_time);
+  tfoot.append(tr);
+}
+
+function formatTime(seconds) {
+  var minutes = Math.trunc(seconds / 60);
+  seconds = Math.trunc(seconds % 60);
+
+  seconds = (seconds < 10) ? '0' + seconds: seconds;
+
+  return minutes + "m:" + seconds + 's';
+}
+
+function formatDistance(meters) {
+  return (meters / 1609.3439999999998).toFixed(2) + ' miles';
+}
+
   </script>
 <body>
